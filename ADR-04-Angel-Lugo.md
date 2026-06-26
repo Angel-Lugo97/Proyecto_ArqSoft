@@ -56,6 +56,18 @@ Al desarrollar Pendix principalmente con **Java para Android**, la aplicación f
 **Deuda o riesgo:**  
 Si la aplicación crece en el futuro, podría ser necesario cambiar o mejorar la forma en que se guardan los datos, agregar sincronización en la nube o crear una versión para iOS. Esto podría requerir más tiempo y posiblemente aprender nuevas tecnologías o modificar parte del código original.
 
+## Vistas arquitectonicas
+Se eligieron estas vistas arquitectónicas porque permiten documentar PendixApp desde diferentes perspectivas, mostrando no solo qué hará la aplicación, sino también cómo estará organizada, dónde se ejecutará y cómo funcionarán sus procesos principales.
+
+La **vista lógica** se eligió porque ayuda a representar las funciones principales del sistema. En el caso de PendixApp, permite mostrar cómo el usuario interactúa con la aplicación para crear pendientes, editarlos, eliminarlos, consultarlos, marcarlos como completados y programar recordatorios. Esta vista es importante porque explica la estructura funcional del sistema sin enfocarse todavía en archivos o código.
+
+La **vista física** se eligió porque permite mostrar cómo estará organizado el proyecto dentro de Android Studio. Esta vista ayuda a visualizar la separación entre pantallas, modelos, base de datos, adaptadores y clases de notificaciones. Esto es importante porque PendixApp no debe quedar como un proyecto donde todo el código esté mezclado en una sola clase, sino como una aplicación organizada y fácil de mantener.
+
+La **vista de despliegue** se eligió porque muestra dónde se ejecutará la aplicación y qué elementos necesita para funcionar. En este proyecto, PendixApp se ejecutará directamente en un dispositivo Android, usará SQLite como base de datos local y utilizará el sistema de notificaciones de Android. Esta vista también ayuda a dejar claro que el sistema no depende de servidores externos ni de servicios en la nube para su primera versión.
+
+La **vista de procesos** se eligió porque permite representar el flujo principal de uso de la aplicación. Por ejemplo, cuando el usuario registra un pendiente, la aplicación recibe los datos, los valida, los guarda en SQLite y programa una notificación local. Esta vista es importante porque muestra el comportamiento del sistema paso a paso.
+
+![Diagrama Mermaid de vistas arquitectónicas](mermaid-diagram-1780715733924.png)
 ## Diagrama
 
 Un boceto de cómo se estructura tu sistema (draw.io, Mermaid o a mano escaneado)
