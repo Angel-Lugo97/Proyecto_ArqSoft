@@ -71,15 +71,13 @@ Además, esta rama refleja el proceso de trabajo solicitado en la actividad, ya 
 
 La documentación completa de la arquitectura de PendixAPP, versionada como código mediante Mermaid, se encuentra en:
 
-[`docs/C4_PendixAPP.md`](docs/C4_PendixAPP.md)
+[`PendixAPP/docs/C4_PendixAPP.md`](PendixAPP/docs/C4_PendixAPP.md)
 
 | Nivel | Archivo | Descripción |
 | :--- | :--- | :--- |
-| **C4 Nivel 1 — Contexto** | [`C4_PendixAPP.md`](docs/C4_PendixAPP.md) | Muestra quién usa PendixAPP y cuál es el propósito general del sistema |
-| **C4 Nivel 2 — Contenedores** | [`C4_PendixAPP.md`](docs/C4_PendixAPP.md) | Muestra las piezas técnicas grandes del sistema, como el navegador, el servidor Java, la interfaz web y el almacenamiento local |
-| **C4 Nivel 3 — Componentes** | [`C4_PendixAPP.md`](docs/C4_PendixAPP.md) | Muestra los componentes internos principales, como `PendixAppServer`, `PendixHandler`, las vistas, el gestor de tareas y la persistencia con `localStorage` |
-
-> Los diagramas C4 no se agregan como imágenes sueltas, sino como código Mermaid dentro del archivo Markdown.
+| **C4 Nivel 1 — Contexto** | [`C4_PendixAPP.md`](PendixAPP/docs/C4_PendixAPP.md) | Muestra quién usa PendixAPP y cuál es el propósito general del sistema |
+| **C4 Nivel 2 — Contenedores** | [`C4_PendixAPP.md`](PendixAPP/docs/C4_PendixAPP.md) | Muestra las piezas técnicas grandes del sistema, como el navegador, el servidor Java, la interfaz web y el almacenamiento local |
+| **C4 Nivel 3 — Componentes** | [`C4_PendixAPP.md`](PendixAPP/docs/C4_PendixAPP.md) | Muestra los componentes internos principales, como `PendixAppServer`, `PendixHandler`, las vistas, el gestor de tareas y la persistencia con `localStorage` |
 
 ---
 
