@@ -1,7 +1,6 @@
 # PendixAPP - Rama diagramas
 
-PendixAPP es una aplicación enfocada en la gestión de pendientes y recordatorios personales.  
-El sistema permite registrar tareas, asignar fechas y horarios, consultar pendientes, marcar actividades como completadas y organizar recordatorios desde una interfaz web ejecutada localmente con Java.
+PendixAPP es una aplicación enfocada en la gestión de pendientes y recordatorios personales. El sistema permite registrar tareas, asignar fechas y horarios, consultar pendientes, marcar actividades como completadas y organizar recordatorios desde una interfaz web ejecutada localmente con Java.
 
 En esta rama llamada **diagramas** se documenta la arquitectura del proyecto mediante el **Modelo C4**, usando diagramas escritos como código en **Mermaid** dentro de un archivo Markdown.
 
@@ -20,10 +19,9 @@ Se agregan estos diagramas porque permiten comprender mejor quién usa el sistem
 | **Materia** | Arquitectura de Software |
 | **Profesor** | Jorge Javier Pedroza Romero |
 | **Proyecto** | PendixAPP |
-| **Tarea** | Actividad #28 — Proyecto: creacion de rama diagramas |
+| **Tarea** | Actividad #28 — Proyecto: creación de rama diagramas |
 | **Fecha** | 07/08/2026 |
-| **Estado** | ADR actualizado por ADR-07 |
-
+| **Estado** | Documentación C4 agregada en rama diagramas |
 ---
 
 ## Descripción General
