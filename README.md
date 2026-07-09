@@ -1,28 +1,14 @@
-# PendixAPP - ADR-07: Patrones GOF
+# PendixAPP - Rama diagramas
 
-PendixAPP es una aplicación móvil enfocada en la gestión de pendientes y recordatorios personales.  
-El sistema permite registrar tareas, asignar fechas y horarios, consultar pendientes, marcar actividades como completadas y recibir recordatorios desde un dispositivo Android.
+PendixAPP es una aplicación enfocada en la gestión de pendientes y recordatorios personales.  
+El sistema permite registrar tareas, asignar fechas y horarios, consultar pendientes, marcar actividades como completadas y organizar recordatorios desde una interfaz web ejecutada localmente con Java.
 
-En esta rama se documenta el **ADR-07**, donde se integran patrones de diseño **GOF** al proyecto para mejorar la organización interna del sistema sin hacerlo demasiado complejo.
+En esta rama llamada **diagramas** se documenta la arquitectura del proyecto mediante el **Modelo C4**, usando diagramas escritos como código en **Mermaid** dentro de un archivo Markdown.
 
+El objetivo de esta rama es representar de forma clara cómo está estructurado PendixAPP en tres niveles: el contexto general del sistema, los contenedores técnicos principales y los componentes internos más importantes.
+
+Se agregan estos diagramas porque permiten comprender mejor quién usa el sistema, cómo se comunican sus partes principales y qué responsabilidades tiene cada componente dentro del proyecto, sin depender de imágenes sueltas ni documentación separada del repositorio.
 ---
-
-## Evidencia de Ejecución Funcional
-
-La siguiente imagen muestra el prototipo **PendixAPP** ejecutándose correctamente desde el navegador mediante un servidor local en Java usando el puerto `5018`.
-
-En la captura se puede observar la interfaz tipo celular, el tema oscuro con tonos púrpuras, los filtros con conteo integrado, la sección de notificaciones vencidas y la sección de planes e inicio de sesión.
-
-```text
-URL de ejecución: http://localhost:5018
-Servidor: Java
-Puerto: 5018
-```
-
-![Captura de ejecución funcional de PendixAPP](Captura.png)
-
----
-
 ## Datos del Estudiante
 
 | Campo | Información |
@@ -60,21 +46,24 @@ Con este nuevo ADR se agregan patrones de diseño GOF para que el sistema tenga 
 
 ## Objetivo de esta Rama
 
-El objetivo de esta rama es documentar la integración de patrones de diseño GOF en PendixAPP.
+El objetivo de esta rama es documentar la arquitectura de PendixAPP mediante el **Modelo C4**, utilizando diagramas escritos como código en **Mermaid** dentro de un archivo Markdown.
 
-Esta actividad pide integrar mínimo dos patrones GOF de categorías distintas.  
-Por eso se eligieron patrones sencillos, reales y fáciles de implementar para un proyecto escolar de tercer cuatrimestre.
+Esta actividad pide representar la arquitectura del proyecto en tres niveles principales: **Contexto, Contenedores y Componentes**.  
+Por eso se creó la rama **diagramas**, donde se agregó la documentación técnica necesaria para explicar cómo está organizado el sistema y cómo se comunican sus partes.
 
 Esta rama explica:
 
 ```text
-- Qué patrones GOF se eligieron.
-- A qué categoría pertenece cada patrón.
-- Qué problema resuelve cada patrón dentro de PendixAPP.
-- Por qué se eligieron sobre otras opciones.
-- Cómo se relacionan con la API REST.
-- Qué consecuencias tiene integrarlos al proyecto.
+- Quién usa PendixAPP y cuál es el propósito general del sistema.
+- Cuáles son las piezas técnicas principales del proyecto.
+- Cómo se comunican el navegador, el servidor Java, la interfaz web y el almacenamiento local.
+- Qué componentes internos forman la pieza principal del sistema.
+- Qué responsabilidades tienen elementos como PendixAppServer, PendixHandler, las vistas, el gestor de tareas y localStorage.
+- Por qué los diagramas se agregaron como código Mermaid y no como imágenes sueltas.
+- Cómo la documentación C4 ayuda a entender mejor la arquitectura actual del proyecto.
 ```
+
+Además, esta rama refleja el proceso de trabajo solicitado en la actividad, ya que los diagramas C4 fueron agregados por niveles y posteriormente corregidos para asegurar que se rendericen correctamente en GitHub.
 
 ---
 
@@ -94,6 +83,21 @@ La documentación completa de la arquitectura de PendixAPP, versionada como cód
 
 ---
 
+## Evidencia de Ejecución Funcional
+
+La siguiente imagen muestra el prototipo **PendixAPP** ejecutándose correctamente desde el navegador mediante un servidor local en Java usando el puerto `5018`.
+
+En la captura se puede observar la interfaz tipo celular, el tema oscuro con tonos púrpuras, los filtros con conteo integrado, la sección de notificaciones vencidas y la sección de planes e inicio de sesión.
+
+```text
+URL de ejecución: http://localhost:5018
+Servidor: Java
+Puerto: 5018
+```
+
+![Captura de ejecución funcional de PendixAPP](Captura.png)
+
+---
 ## Archivos de la Rama
 
 En esta rama deben aparecer únicamente los archivos relacionados con el ADR-07 y sus diagramas:
