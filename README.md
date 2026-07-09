@@ -20,8 +20,8 @@ Se agregan estos diagramas porque permiten comprender mejor quién usa el sistem
 | **Materia** | Arquitectura de Software |
 | **Profesor** | Jorge Javier Pedroza Romero |
 | **Proyecto** | PendixAPP |
-| **Tarea** | Actividad #28 — Proyecto: Patrones GOF |
-| **Fecha** | 26/06/2026 |
+| **Tarea** | Actividad #28 — Proyecto: creacion de rama diagramas |
+| **Fecha** | 07/08/2026 |
 | **Estado** | ADR actualizado por ADR-07 |
 
 ---
