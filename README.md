@@ -8,6 +8,8 @@ En esta rama llamada **diagramas** se documenta la arquitectura del proyecto med
 El objetivo de esta rama es representar de forma clara cómo está estructurado PendixAPP en tres niveles: el contexto general del sistema, los contenedores técnicos principales y los componentes internos más importantes.
 
 Se agregan estos diagramas porque permiten comprender mejor quién usa el sistema, cómo se comunican sus partes principales y qué responsabilidades tiene cada componente dentro del proyecto, sin depender de imágenes sueltas ni documentación separada del repositorio.
+
+
 ---
 ## Datos del Estudiante
 
