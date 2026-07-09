@@ -1,18 +1,31 @@
-# Modelo C4 — PendixAPP
 
-## C4 Nivel 1 — Contexto
+## C4 Nivel 2 — Contenedores
 
 **Para quién es:**  
-Este nivel está dirigido a personas no técnicas, docentes o compañeros que necesitan entender de forma general qué es PendixAPP y quién lo utiliza.
+Este nivel está dirigido a personas con conocimientos técnicos básicos, ya que muestra las piezas principales del sistema y cómo se comunican.
 
 **Qué pregunta responde:**  
-¿Quién usa el sistema y cuál es el propósito principal de PendixAPP?
+¿Cuáles son las partes grandes de PendixAPP y cómo interactúan entre sí?
 
 ```mermaid
 flowchart LR
-    Usuario["Persona: Usuario<br/>Estudiante o persona que necesita organizar pendientes"]
-    PendixAPP["Sistema: PendixAPP<br/>Prototipo web local para gestionar pendientes, recordatorios, calendario, planes e inicio de sesión simulado"]
-    Navegador["Navegador web<br/>Medio donde se visualiza la aplicación"]
+    Usuario["Persona: Usuario"]
 
-    Usuario -->|"Registra, consulta, modifica y elimina pendientes"| PendixAPP
-    PendixAPP -->|"Se muestra mediante"| Navegador
+    subgraph Dispositivo["Computadora del usuario"]
+        Navegador["Contenedor: Navegador web<br/>Ejecuta la interfaz HTML, CSS y JavaScript"]
+        LocalStorage["Contenedor: localStorage<br/>Guarda pendientes y sesión simulada en el navegador"]
+    end
+
+    subgraph ServidorLocal["Servidor local Java"]
+        JavaServer["Contenedor: PendixAppServer<br/>Servidor HTTP local en Java usando HttpServer"]
+        HtmlApp["Contenedor: Interfaz web incrustada<br/>HTML, CSS y JavaScript dentro del archivo Java"]
+        ApiSimulada["Contenedor: API simulada<br/>Ruta /api/pendientes"]
+    end
+
+    Usuario -->|"Usa la aplicación"| Navegador
+    Navegador -->|"Solicita http://localhost:5018"| JavaServer
+    JavaServer -->|"Entrega HTML/CSS/JS"| HtmlApp
+    HtmlApp -->|"Se ejecuta en"| Navegador
+    Navegador -->|"Guarda y consulta datos"| LocalStorage
+    Navegador -->|"Puede consultar"| ApiSimulada
+```
