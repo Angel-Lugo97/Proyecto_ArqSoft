@@ -16,7 +16,9 @@ flowchart LR
 
     Usuario -->|"Registra, consulta, modifica y elimina pendientes"| PendixAPP
     PendixAPP -->|"Se muestra mediante"| Navegador
+```
 
+---
 
 ## C4 Nivel 2 — Contenedores
 
@@ -43,12 +45,13 @@ flowchart LR
 
     Usuario -->|"Usa la aplicación"| Navegador
     Navegador -->|"Solicita http://localhost:5018"| JavaServer
-    JavaServer -->|"Entrega HTML/CSS/JS"| HtmlApp
+    JavaServer -->|"Entrega HTML, CSS y JavaScript"| HtmlApp
     HtmlApp -->|"Se ejecuta en"| Navegador
     Navegador -->|"Guarda y consulta datos"| LocalStorage
     Navegador -->|"Puede consultar"| ApiSimulada
 ```
 
+---
 
 ## C4 Nivel 3 — Componentes
 
@@ -64,7 +67,7 @@ flowchart TB
         Main["main()<br/>Inicia el servidor local en el puerto 5018"]
         AbrirNavegador["abrirNavegador()<br/>Intenta abrir la aplicación automáticamente en el navegador"]
         Handler["PendixHandler<br/>Controlador HTTP que recibe las peticiones"]
-        Handle["handle()<br/>Valida método GET y decide qué respuesta entregar"]
+        Handle["handle()<br/>Valida el método GET y decide qué respuesta entregar"]
         Enviar["enviar()<br/>Construye la respuesta HTTP con status, headers y body"]
         Html["html()<br/>Genera la interfaz HTML, CSS y JavaScript"]
     end
@@ -89,10 +92,12 @@ flowchart TB
     Html --> VistaCalendario
     Html --> VistaRecordatorios
     Html --> VistaAjustes
+
     VistaPendientes --> GestorTareas
     VistaCalendario --> GestorTareas
     VistaRecordatorios --> GestorTareas
     VistaAjustes --> GestorSesion
+
     GestorTareas --> Persistencia
     GestorSesion --> Persistencia
 ```

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="PendixApp">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/PendixApp.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
