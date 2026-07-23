@@ -75,26 +75,14 @@ public class PendixAppServer {
     }
 
     private static class PendixHandler implements HttpHandler {
+        private final PendixRouter router =
+                new PendixRouter(PendixAppServer::html, new PendienteService());
+
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
-
-            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                enviar(exchange, 405, "text/plain; charset=UTF-8", "Metodo no permitido");
-                return;
-            }
-
-            if ("/".equals(path) || "/index.html".equals(path)) {
-                enviar(exchange, 200, "text/html; charset=UTF-8", html());
-                return;
-            }
-
-            if ("/api/pendientes".equals(path)) {
-                enviar(exchange, 200, "application/json; charset=UTF-8", "[\"PendixAPP API simulada desde Java\"]");
-                return;
-            }
-
-            enviar(exchange, 404, "text/plain; charset=UTF-8", "Archivo no encontrado");
+            HttpResult result = router.resolver(exchange.getRequestMethod(), path);
+            enviar(exchange, result.status(), result.contentType(), result.body());
         }
 
         private void enviar(HttpExchange exchange, int status, String contentType, String body) throws IOException {
