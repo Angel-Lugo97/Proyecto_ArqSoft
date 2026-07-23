@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
-mkdir -p out
-javac --release 17 -encoding UTF-8 -d out src/PendixAppServer.java
-jar cfe PendixApp.jar PendixAppServer -C out .
-java -jar PendixApp.jar
+chmod +x gradlew
+./gradlew clean build
+java -jar build/libs/PendixAPP-1.0.0.jar
