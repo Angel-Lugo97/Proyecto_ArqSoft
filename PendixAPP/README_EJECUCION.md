@@ -75,3 +75,21 @@ En la terminal presiona:
 ```text
 CTRL + C
 ```
+
+## Pruebas automatizadas
+
+PendixAPP utiliza JUnit 5 y Gradle para ejecutar una suite automatizada:
+
+```bash
+./gradlew clean test
+```
+
+El reporte HTML se genera en:
+
+```text
+build/reports/tests/test/index.html
+```
+
+## Integración Continua
+
+El workflow ubicado en `.github/workflows/java-ci.yml` compila el proyecto y ejecuta las pruebas en cada `push` y `pull_request`.

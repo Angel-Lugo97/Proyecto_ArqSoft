@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-java -jar "%~dp0PendixApp.jar"
+call gradlew.bat run
 pause
