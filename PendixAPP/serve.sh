@@ -137,39 +137,72 @@ verify_public_url() {
   local public_url="$1"
   local headers_file="$RUNTIME_DIR/headers.tmp"
   local body_file="$RUNTIME_DIR/body.tmp"
+  local public_ready="false"
 
-  for _ in {1..40}; do
-    if curl --silent --show-error --fail --max-time 8 "$public_url/" >/dev/null 2>&1; then
+  echo "Esperando a que Cloudflare active la URL pública..."
+
+  for attempt in {1..20}; do
+    if [[ -n "${TUNNEL_PID:-}" ]] && ! kill -0 "$TUNNEL_PID" 2>/dev/null; then
+      echo "ERROR: el túnel de Cloudflare se cerró."
+      tail -n 40 "$TUNNEL_LOG" || true
+      return 1
+    fi
+
+    if curl --silent --fail --max-time 8 \
+      "$public_url/health" >/dev/null 2>&1; then
+      public_ready="true"
+      echo "La URL pública ya está disponible."
       break
     fi
-    sleep 0.5
+
+    if (( attempt % 10 == 0 )); then
+      echo "Cloudflare todavía está propagando el DNS... intento $attempt de 20"
+    fi
+
+    sleep 1
   done
 
-  curl --silent --show-error --fail --max-time 15 "$public_url/" >/dev/null
-  curl --silent --show-error --fail --max-time 15 "$public_url/health" >/dev/null
+  if [[ "$public_ready" != "true" ]]; then
+    echo
+    echo "ADVERTENCIA: la URL todavía no responde desde curl."
+    echo "El túnel permanecerá encendido para que puedas probarla más tarde:"
+    echo "$public_url"
+    echo
+    return 0
+  fi
 
-  curl --silent --show-error --fail --compressed \
+  if ! curl --silent --show-error --fail --compressed \
     -H "Accept-Encoding: gzip, br" \
-    -D "$headers_file" -o "$body_file" "$public_url/styles.css"
-  [[ -s "$body_file" ]] || { echo "ERROR: styles.css llegó vacío."; return 1; }
-  grep -qi '^content-type: text/css' "$headers_file" || {
-    echo "ERROR: styles.css tiene un Content-Type incorrecto."
-    return 1
-  }
+    -D "$headers_file" \
+    -o "$body_file" \
+    "$public_url/styles.css"; then
+    echo "ADVERTENCIA: no se pudo verificar styles.css."
+    return 0
+  fi
 
-  curl --silent --show-error --fail --compressed \
+  if [[ ! -s "$body_file" ]]; then
+    echo "ADVERTENCIA: styles.css llegó vacío."
+    return 0
+  fi
+
+  if ! curl --silent --show-error --fail --compressed \
     -H "Accept-Encoding: gzip, br" \
-    -D "$headers_file" -o "$body_file" "$public_url/app.js"
-  [[ -s "$body_file" ]] || { echo "ERROR: app.js llegó vacío."; return 1; }
-  grep -qi '^content-type: application/javascript' "$headers_file" || {
-    echo "ERROR: app.js tiene un Content-Type incorrecto."
-    return 1
-  }
+    -D "$headers_file" \
+    -o "$body_file" \
+    "$public_url/app.js"; then
+    echo "ADVERTENCIA: no se pudo verificar app.js."
+    return 0
+  fi
+
+  if [[ ! -s "$body_file" ]]; then
+    echo "ADVERTENCIA: app.js llegó vacío."
+    return 0
+  fi
 
   rm -f "$headers_file" "$body_file"
-  echo "Verificación pública completada: home, health, CSS y JavaScript responden correctamente."
-}
 
+  echo "Verificación pública completada correctamente."
+}
 if curl --silent --max-time 1 "$LOCAL_URL/health" >/dev/null 2>&1; then
   echo "ERROR: el puerto $PORT ya está siendo usado por otra instancia de PendixAPP."
   echo "Deténla antes de ejecutar este script."

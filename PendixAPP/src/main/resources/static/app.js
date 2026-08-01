@@ -76,5 +76,7 @@ async function watchServerVersion(){
     // Durante la recompilación el servidor puede estar fuera de línea unos instantes.
   }
 }
-watchServerVersion();
-setInterval(watchServerVersion,2000);
+if(API_BASE_URL){
+  watchServerVersion();
+  setInterval(watchServerVersion,2000);
+}

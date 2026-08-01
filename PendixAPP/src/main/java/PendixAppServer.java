@@ -113,6 +113,24 @@ public class PendixAppServer {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            Headers headers = exchange.getResponseHeaders();
+
+            headers.set("Access-Control-Allow-Origin", "*");
+            headers.set(
+                    "Access-Control-Allow-Methods",
+                    "GET, POST, PUT, DELETE, OPTIONS"
+            );
+            headers.set(
+                    "Access-Control-Allow-Headers",
+                    "Content-Type, Authorization"
+            );
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+                return;
+            }
+
             String path = exchange.getRequestURI().getPath();
             HttpResult result = router.resolver(exchange.getRequestMethod(), path);
             enviar(exchange, result);
