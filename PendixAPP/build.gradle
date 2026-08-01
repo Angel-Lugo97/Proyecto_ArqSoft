@@ -37,8 +37,41 @@ tasks.named('test') {
     }
 }
 
-jar {
+def executableJar = tasks.named('jar', Jar) {
+    archiveFileName = 'PendixAPP.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     manifest {
         attributes 'Main-Class': application.mainClass.get()
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { dependency ->
+            dependency.isDirectory()
+                    ? dependency
+                    : zipTree(dependency)
+        }
+    }
+
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+tasks.register('awsBundle', Zip) {
+    group = 'distribution'
+    description = 'Genera el paquete para AWS Elastic Beanstalk.'
+
+    dependsOn executableJar
+
+    archiveFileName = 'PendixAPP-aws.zip'
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+
+    from(executableJar.flatMap { it.archiveFile })
+
+    from('Procfile')
+
+    from('.ebextensions') {
+        into '.ebextensions'
     }
 }
