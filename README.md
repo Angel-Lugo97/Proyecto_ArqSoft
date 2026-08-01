@@ -1,673 +1,1335 @@
-# ADR-10 — Arquitectura final de PendixAPP: frontend en GitHub Pages, backend local, Cloudflare Tunnel y CI/CD con aprobación
+# PendixAPP — Rama `Entrega-Final`
 
-- **Estado:** Aceptado
-- **Fecha:** 31 de julio de 2026
-- **Rama evaluada:** `Entrega-Final`
-- **Proyecto:** PendixAPP
-- **URL del frontend:** `https://angel-lugo97.github.io/Proyecto_ArqSoft/`
-- **Puerto local del backend:** `5018`
+PendixAPP es una aplicación enfocada en la gestión de pendientes y recordatorios personales. El sistema permite registrar tareas, consultar actividades, marcar pendientes como completados y organizar recordatorios desde una interfaz web desarrollada con Java, HTML, CSS y JavaScript.
 
----
-
-## 1. Contexto
-
-PendixAPP se ejecutaba inicialmente como una sola aplicación Java que entregaba la interfaz web y atendía las solicitudes HTTP desde la misma computadora. Para la entrega final se necesitaba publicar la aplicación en internet sin utilizar AWS ni otro servicio de nube de pago, demostrar una separación entre frontend y backend, incorporar un pipeline visible en GitHub Actions, ejecutar pruebas automatizadas antes del despliegue y permitir una autorización manual antes de publicar una nueva versión.
-
-GitHub Pages puede alojar archivos estáticos como HTML, CSS y JavaScript, pero no puede ejecutar un backend Java. Por esa razón, el frontend se publica en GitHub Pages y el backend continúa ejecutándose en la laptop del desarrollador.
-
-Para permitir el acceso al backend desde otra red, se utiliza Cloudflare Quick Tunnel. El proceso `cloudflared` genera una URL HTTPS temporal de `trycloudflare.com` y redirige las solicitudes hacia el servidor Java local en `http://127.0.0.1:5018`.
-
-La solución final también incluye una interfaz adaptable para computadora y teléfono, un script `serve.sh` para iniciar Java y Cloudflare, endpoints de diagnóstico, pruebas Gradle y un workflow de GitHub Actions para validar y desplegar el frontend.
-
-> **Aclaración de persistencia:** actualmente la mayor parte de los pendientes y la sesión simulada continúan almacenándose en `localStorage`. Por ello, cada navegador mantiene sus propios datos. El backend Java todavía no funciona como una base de datos central compartida.
-
----
-
-## 2. Problema arquitectónico
-
-Se requiere una arquitectura que permita:
-
-1. Publicar la interfaz en una URL pública permanente y gratuita.
-2. Mantener el backend en la laptop del desarrollador.
-3. Evitar servicios de infraestructura de pago.
-4. Acceder al backend desde internet mediante HTTPS.
-5. Separar físicamente frontend y backend.
-6. Automatizar pruebas y despliegue.
-7. Detener el despliegue hasta recibir autorización.
-8. Mantener trazabilidad de cambios mediante Git y GitHub.
-9. Permitir que la aplicación sea utilizable desde teléfonos.
-10. Facilitar una demostración académica sin abrir puertos del router.
-
----
-
-## 3. Fuerzas arquitectónicas
-
-| Fuerza | Descripción |
-|---|---|
-| Costo | La solución debe funcionar sin AWS, tarjetas ni cargos recurrentes. |
-| Desplegabilidad | El frontend debe poder actualizarse desde GitHub Actions. |
-| Separación de responsabilidades | Frontend y backend deben poder ejecutarse y desplegarse por separado. |
-| Disponibilidad | El frontend debe permanecer accesible aunque el backend esté apagado. |
-| Seguridad de red | No se deben abrir puertos directamente en el router. |
-| Trazabilidad | Los cambios deben quedar registrados en commits, Pull Requests y ejecuciones del pipeline. |
-| Control de publicación | El despliegue debe poder quedar en espera hasta que un revisor lo autorice. |
-| Compatibilidad móvil | La interfaz debe adaptarse correctamente a pantallas pequeñas. |
-| Simplicidad | La solución debe ser comprensible y operable para una entrega académica. |
-
----
-
-## 4. Decisión
-
-Se decidió dividir PendixAPP en dos partes desplegadas de forma independiente.
-
-### 4.1 Frontend
-
-El frontend está compuesto por:
+En esta rama llamada **`Entrega-Final`** se conservaron las pruebas automatizadas con **JUnit 5**, la estructura **Arrange–Act–Assert** y el pipeline de Integración Continua implementados anteriormente. Además, el proyecto fue adaptado para separar físicamente el frontend y el backend:
 
 ```text
-index.html
-styles.css
-app.js
+Frontend:
+GitHub Pages
+
+Backend:
+Laptop del desarrollador + Java 21 + Cloudflare Quick Tunnel
 ```
 
-Los archivos estáticos se publican mediante GitHub Pages en:
+También se incorporó una vista adaptable para teléfonos, un script de ejecución para publicar el backend, endpoints de diagnóstico, compresión GZIP, configuración CORS, despliegue mediante GitHub Actions y una etapa de autorización manual antes de publicar cambios en GitHub Pages.
+
+El objetivo de esta rama es consolidar la arquitectura final de PendixAPP, comprobar que la lógica principal se mantiene estable, publicar la interfaz en internet, exponer temporalmente el backend local y documentar las decisiones, riesgos, trade-offs y puntos de sensibilidad de la solución.
+
+---
+
+## Datos del estudiante
+
+| Campo | Información |
+| :--- | :--- |
+| **Nombre** | Angel Abraham Lugo Saenz |
+| **Matrícula** | SW2409052 |
+| **Materia** | Arquitectura de Software |
+| **Profesor** | Jorge Javier Pedroza Romero |
+| **Proyecto** | PendixAPP |
+| **Actividad** | Actividad #40 — Documentación final, demo funcional y evaluación ATAM |
+| **Fecha** | 31/07/2026 |
+| **Rama** | `Entrega-Final` |
+| **Estado** | Arquitectura final, pruebas, CI/CD, GitHub Pages y Cloudflare Tunnel configurados |
+
+---
+
+## Descripción general
+
+PendixAPP es un prototipo funcional orientado a la gestión de pendientes personales.
+
+El proyecto utiliza **Java 21** y un servidor HTTP local que se ejecuta en el puerto `5018`. La aplicación presenta una interfaz web tipo celular desde la que se pueden visualizar pendientes, filtros, recordatorios, calendario, planes, ajustes e inicio de sesión simulado.
+
+Antes de las ramas de pruebas, la validación del proyecto dependía principalmente de ejecutar manualmente la aplicación y comprobar su comportamiento desde el navegador. Posteriormente se incorporó una estructura de compilación con **Gradle**, pruebas automatizadas con **JUnit 5** y un workflow de **GitHub Actions**.
+
+En `Entrega-Final`, la solución se amplió con los siguientes componentes:
+
+```text
+- Frontend estático desplegado en GitHub Pages.
+- Backend Java ejecutado localmente en la laptop.
+- Cloudflare Quick Tunnel para publicar el backend mediante HTTPS.
+- Vista responsive para computadoras y teléfonos.
+- Endpoints /health y /version para diagnóstico.
+- Recursos HTML, CSS y JavaScript separados.
+- Compresión GZIP para recursos web.
+- Configuración CORS para permitir comunicación entre dominios.
+- Script serve.sh para compilar, ejecutar y publicar la aplicación.
+- Pipeline CI/CD con pruebas y despliegue de GitHub Pages.
+- Environment github-pages con autorización manual.
+- Evaluación ATAM integrada en este mismo README.
+```
+
+El frontend publicado permanece disponible aunque la laptop esté apagada. Sin embargo, las operaciones que dependan del backend solo funcionan mientras Java y `cloudflared` permanezcan activos en la computadora del desarrollador.
+
+Sitio publicado:
 
 ```text
 https://angel-lugo97.github.io/Proyecto_ArqSoft/
 ```
 
-El frontend utiliza rutas relativas para que sus recursos funcionen dentro del subdirectorio del repositorio en GitHub Pages.
+---
 
-La interfaz incluye reglas responsive para:
+## Objetivo de esta rama
 
-- Eliminar el marco de teléfono simulado en pantallas pequeñas.
-- Utilizar el ancho disponible del dispositivo.
-- Ajustar filtros, formularios y tarjetas.
-- Mantener botones con tamaño táctil adecuado.
-- Adaptar la navegación inferior.
-- Respetar áreas seguras del dispositivo.
+El objetivo de la rama **`Entrega-Final`** es integrar la versión final de PendixAPP, mantener las pruebas automatizadas, configurar un flujo CI/CD y demostrar una separación real entre frontend y backend sin utilizar AWS ni servicios de pago.
 
-### 4.2 Backend
-
-El backend se ejecuta en la laptop mediante Java 21:
+Esta rama permite:
 
 ```text
-http://127.0.0.1:5018
+- Ejecutar pruebas automatizadas sobre la lógica principal del proyecto.
+- Aplicar la estructura Arrange–Act–Assert en las pruebas.
+- Compilar PendixAPP mediante Gradle.
+- Ejecutar la suite de pruebas en cada push.
+- Ejecutar la suite de pruebas en cada Pull Request.
+- Detectar errores antes de integrar cambios.
+- Documentar qué clases se probaron y por qué fueron seleccionadas.
+- Publicar el frontend mediante GitHub Pages.
+- Ejecutar el backend desde la laptop del desarrollador.
+- Exponer el backend con una URL HTTPS mediante Cloudflare Tunnel.
+- Permitir una autorización manual antes del despliegue.
+- Adaptar la interfaz para teléfonos y computadoras.
+- Mantener una URL permanente para el frontend.
+- Configurar dinámicamente la URL temporal del backend.
+- Documentar la arquitectura mediante ADR, C4 y ATAM dentro de este README.
 ```
 
-El servidor incluye, entre otros, los siguientes endpoints:
+---
+
+## Tecnologías utilizadas
+
+| Tecnología | Uso dentro de la rama |
+| :--- | :--- |
+| **Java 21** | Lenguaje y versión utilizada para compilar y ejecutar el backend |
+| **JUnit 5** | Framework de pruebas automatizadas de la familia xUnit para Java |
+| **Gradle** | Compilación, administración de dependencias y ejecución de pruebas |
+| **Gradle Wrapper** | Garantiza la misma versión de Gradle en local y GitHub Actions |
+| **HTML5** | Estructura del frontend |
+| **CSS3** | Diseño visual y adaptación responsive |
+| **JavaScript** | Interacción del frontend, persistencia local y conexión con el backend |
+| **GitHub Actions** | Pipeline de Integración Continua y despliegue |
+| **GitHub Pages** | Alojamiento gratuito del frontend estático |
+| **Cloudflare Quick Tunnel** | Publicación temporal del backend local mediante HTTPS |
+| **Git y GitHub** | Control de versiones, ramas, commits, Pull Requests y aprobación |
+| **localStorage** | Persistencia local de pendientes, sesión simulada y URL del backend |
+| **CORS** | Comunicación entre GitHub Pages y el backend publicado por Cloudflare |
+| **GZIP** | Compresión de recursos HTML, CSS y JavaScript |
+
+> Debido a que PendixAPP está desarrollado en Java, se utilizó **JUnit 5**, que representa el enfoque xUnit dentro del ecosistema Java.
+
+---
+
+# Suite de pruebas automatizadas
+
+La suite se encuentra en:
 
 ```text
-GET /health
-GET /version
-GET /api/pendientes
+PendixAPP/src/test/java/
 ```
 
-El endpoint `/health` permite comprobar que el backend está activo. El endpoint `/version` permite detectar reinicios o actualizaciones del servidor.
-
-### 4.3 Publicación del backend
-
-Cloudflare Quick Tunnel expone temporalmente el backend local:
+Clases de prueba agregadas y conservadas:
 
 ```text
-Internet
-   ↓ HTTPS
-https://<subdominio>.trycloudflare.com
-   ↓
-cloudflared
-   ↓ HTTP local
-http://127.0.0.1:5018
+HttpResultTest.java
+PendienteTest.java
+PendienteServiceTest.java
+PendixRouterTest.java
+GzipSupportTest.java
 ```
 
-El script `serve.sh` realiza las siguientes tareas:
+La suite verifica cinco componentes de producción, superando el requisito mínimo de tres clases.
 
-1. Compila el proyecto con Gradle.
-2. Ejecuta el JAR de PendixAPP.
-3. Comprueba que el backend local responda.
-4. Inicia `cloudflared`.
-5. Imprime la URL pública.
-6. Mantiene Java y Cloudflare activos.
-7. Detiene ambos procesos al recibir `Ctrl+C`.
-8. Puede vigilar cambios y reiniciar la aplicación local sin cambiar el túnel mientras el proceso siga activo.
+| Clase probada | Responsabilidad | Motivo de selección |
+| :--- | :--- | :--- |
+| **Pendiente** | Representa un pendiente y administra su estado | Es una entidad principal del sistema y contiene reglas básicas que deben mantenerse estables |
+| **PendienteService** | Registra, busca y completa pendientes | Contiene lógica de negocio y operaciones que afectan directamente el funcionamiento |
+| **PendixRouter** | Selecciona respuestas según la ruta y el método HTTP | Es responsable de dirigir solicitudes, entregar recursos y responder endpoints |
+| **HttpResult** | Encapsula estado HTTP, tipo de contenido y cuerpo | Permite comprobar que las respuestas generadas sean coherentes |
+| **GzipSupport** | Detecta y genera respuestas comprimidas | Evita entregar recursos vacíos y comprueba la compatibilidad de compresión |
 
-### 4.4 Comunicación entre frontend y backend
+---
 
-La URL del backend puede proporcionarse al frontend mediante el parámetro `api`:
+## Comportamientos verificados
+
+### Pruebas de `Pendiente`
 
 ```text
-https://angel-lugo97.github.io/Proyecto_ArqSoft/?api=https://servidor-temporal.trycloudflare.com
+- Permite marcar un pendiente como completado.
+- Rechaza un título vacío o inválido.
 ```
 
-El frontend guarda la URL en `localStorage` para reutilizarla:
-
-```javascript
-pendix_backend_url
-```
-
-Debido a que GitHub Pages y Cloudflare utilizan dominios diferentes, el backend configura cabeceras CORS para permitir solicitudes desde el frontend.
-
-### 4.5 CI/CD
-
-GitHub Actions ejecuta el siguiente flujo:
+### Pruebas de `PendienteService`
 
 ```text
-Cambio de código
-      ↓
-Commit y push / Pull Request
-      ↓
-Pruebas automáticas con Gradle
-      ↓
-Preparación del frontend estático
-      ↓
-Carga del artefacto de GitHub Pages
-      ↓
-Espera de autorización
-      ↓
-Despliegue en GitHub Pages
+- Permite agregar y buscar un pendiente.
+- Permite completar un pendiente existente.
+- Rechaza identificadores duplicados.
 ```
 
-El workflow contiene al menos dos trabajos:
-
-1. **Validate project**
-   - Descarga el repositorio.
-   - Configura Java 21.
-   - Da permisos al Gradle Wrapper.
-   - Ejecuta `./gradlew clean test`.
-   - Prepara el directorio `_site`.
-   - Sube el artefacto del frontend.
-
-2. **Deploy to GitHub Pages**
-   - Depende del trabajo de validación.
-   - Utiliza el environment `github-pages`.
-   - Puede quedar en espera de autorización.
-   - Publica el frontend mediante `actions/deploy-pages`.
-
-### 4.6 Autorización del despliegue
-
-La aprobación no se controla mediante contraseña. Se configura con usuarios o equipos de GitHub autorizados como revisores del environment `github-pages`.
-
-El flujo esperado es:
+### Pruebas de `PendixRouter`
 
 ```text
-Validación terminada
-       ↓
+- Entrega la página principal en la ruta esperada.
+- Entrega los recursos HTML, CSS y JavaScript.
+- Responde correctamente el endpoint /health.
+- Responde correctamente el endpoint /version.
+- Rechaza métodos HTTP que no están permitidos.
+- Devuelve 404 cuando la ruta no existe.
+```
+
+### Pruebas de `HttpResult`
+
+```text
+- Conserva correctamente los datos de una respuesta HTTP.
+- Rechaza códigos de estado fuera del rango válido.
+```
+
+### Pruebas de `GzipSupport`
+
+```text
+- Detecta cuando un cliente acepta compresión GZIP.
+- Comprime y permite recuperar correctamente el contenido original.
+```
+
+Durante la validación final se ejecutaron **15 pruebas**, todas aprobadas.
+
+---
+
+# Estructura Arrange–Act–Assert
+
+Las pruebas siguen la estructura **Arrange–Act–Assert**, también conocida como AAA.
+
+```text
+Arrange: prepara los objetos, datos y condiciones de la prueba.
+Act: ejecuta el comportamiento que se desea comprobar.
+Assert: compara el resultado obtenido con el resultado esperado.
+```
+
+Ejemplo:
+
+```java
+@Test
+void debeMarcarPendienteComoCompletado() {
+    // Arrange
+    Pendiente pendiente = new Pendiente(1, "Realizar actividad");
+
+    // Act
+    pendiente.completar();
+
+    // Assert
+    assertTrue(pendiente.isCompletado());
+}
+```
+
+Esta estructura ayuda a que las pruebas sean fáciles de leer, mantener y revisar.
+
+---
+
+# Configuración con Gradle
+
+La compilación y las pruebas se administran mediante:
+
+```text
+PendixAPP/build.gradle
+PendixAPP/settings.gradle
+PendixAPP/gradlew
+PendixAPP/gradlew.bat
+PendixAPP/gradle/wrapper/
+```
+
+Dependencias principales de prueba:
+
+```gradle
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+```
+
+La tarea de pruebas utiliza JUnit Platform:
+
+```gradle
+test {
+    useJUnitPlatform()
+}
+```
+
+---
+
+## Ejecutar las pruebas localmente
+
+Desde la carpeta `PendixAPP`:
+
+```bash
+./gradlew clean test
+```
+
+Para ejecutar pruebas y compilación completa:
+
+```bash
+./gradlew clean test build --no-daemon
+```
+
+Resultado esperado:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Para generar el JAR:
+
+```bash
+./gradlew clean build
+```
+
+Archivo generado:
+
+```text
+PendixAPP/build/libs/PendixAPP-1.0.0.jar
+```
+
+---
+
+## Reporte local de pruebas
+
+Gradle genera un reporte HTML en:
+
+```text
+PendixAPP/build/reports/tests/test/index.html
+```
+
+En Arch Linux puede abrirse con:
+
+```bash
+xdg-open build/reports/tests/test/index.html
+```
+
+El reporte permite consultar:
+
+```text
+- Número total de pruebas.
+- Pruebas aprobadas.
+- Pruebas fallidas.
+- Porcentaje de éxito.
+- Tiempo de ejecución.
+- Resultados por clase.
+```
+
+---
+
+# Pipeline de Integración Continua
+
+El workflow final se encuentra en la raíz del repositorio:
+
+```text
+.github/workflows/pages.yml
+```
+
+Se mantiene en la raíz porque GitHub solamente detecta workflows almacenados dentro de:
+
+```text
+.github/workflows/
+```
+
+El pipeline está configurado para ejecutarse cuando ocurre:
+
+```yaml
+on:
+  push:
+    branches:
+      - Entrega-Final
+
+  pull_request:
+    branches:
+      - Entrega-Final
+
+  workflow_dispatch:
+```
+
+Esto significa que cada cambio subido a `Entrega-Final`, cada Pull Request dirigido a esa rama y cada ejecución manual generan una validación automática.
+
+La Integración Continua original se conserva, pero ahora forma parte de un flujo CI/CD completo:
+
+```text
+CI:
+Compilar y ejecutar pruebas.
+
+CD:
+Preparar el frontend, solicitar autorización y publicar GitHub Pages.
+```
+
+---
+
+## Proceso ejecutado por GitHub Actions
+
+El pipeline realiza los siguientes pasos:
+
+```text
+1. Descarga el contenido del repositorio.
+2. Configura Java 21.
+3. Utiliza el Gradle Wrapper.
+4. Da permisos de ejecución a gradlew.
+5. Compila PendixAPP.
+6. Ejecuta la suite de pruebas.
+7. Prepara los archivos estáticos del frontend.
+8. Crea el artefacto de GitHub Pages.
+9. Espera la autorización configurada en el environment github-pages.
+10. Publica el frontend después de la aprobación.
+11. Marca la ejecución en verde si todo funciona.
+12. Marca la ejecución en rojo si la compilación o una prueba falla.
+```
+
+Comando principal de validación:
+
+```bash
+./gradlew clean test --no-daemon
+```
+
+Flujo visual:
+
+```text
+Push o Pull Request
+        ↓
+Validate project
+        ↓
+Pruebas Gradle
+        ↓
+Preparar frontend
+        ↓
+Artefacto GitHub Pages
+        ↓
 Waiting for approval
-       ↓
-Review deployments
-       ↓
+        ↓
 Approve and deploy
-       ↓
-Publicación en GitHub Pages
+        ↓
+Deploy to GitHub Pages
 ```
 
-No cualquier persona de internet puede aprobar. Solo los usuarios o equipos configurados y con permisos suficientes en el repositorio.
+---
+
+## Workflow utilizado
+
+```yaml
+name: PendixAPP - CI/CD GitHub Pages
+
+on:
+  push:
+    branches:
+      - Entrega-Final
+  pull_request:
+    branches:
+      - Entrega-Final
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Dar permisos a Gradle Wrapper
+        run: chmod +x PendixAPP/gradlew
+
+      - name: Compilar y ejecutar pruebas
+        working-directory: PendixAPP
+        run: ./gradlew clean test --no-daemon
+
+      - name: Preparar frontend
+        if: github.event_name != 'pull_request'
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -R PendixAPP/src/main/resources/static/. _site/
+          touch _site/.nojekyll
+
+      - name: Configurar GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto de GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: validate
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar frontend
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+La autorización se configura en:
+
+```text
+Settings
+→ Environments
+→ github-pages
+→ Required reviewers
+```
+
+No se utiliza una contraseña compartida. Solo pueden autorizar los usuarios o equipos de GitHub seleccionados como revisores.
 
 ---
 
-## 5. Alternativas consideradas
+# Evidencia de pruebas locales
 
-### 5.1 AWS
+La siguiente captura debe mostrar el reporte generado por Gradle con las pruebas aprobadas.
 
-Se descartó para esta entrega porque agrega complejidad de configuración, administración de servicios, posible requisito de tarjeta y riesgo de cargos.
+Ruta recomendada:
 
-### 5.2 Frontend y backend juntos detrás de Cloudflare
+```text
+assets/01-pruebas-junit-aprobadas.png
+```
 
-Es una alternativa sencilla, pero no demuestra un despliegue separado ni el uso de GitHub Pages.
+![Reporte local de pruebas JUnit aprobadas](assets/01-pruebas-junit-aprobadas.png)
 
-### 5.3 Solo GitHub Pages
+> La evidencia debe mostrar que no existen fallos y que la suite terminó correctamente.
 
-No es suficiente porque GitHub Pages no ejecuta Java. Solo puede publicar archivos estáticos.
+En la rama final también se debe mostrar la ejecución de las 15 pruebas y el resultado:
 
-### 5.4 Abrir el puerto 5018 en el router
-
-Se descartó por seguridad, configuración de NAT, dependencia del proveedor de internet y ausencia de HTTPS administrado.
-
-### 5.5 Cloudflare Tunnel con nombre y dominio propio
-
-Es una alternativa superior para una URL estable, pero requiere cuenta de Cloudflare y un dominio administrado. Para la demostración se eligió Quick Tunnel.
-
-### 5.6 Backend en un proveedor gratuito permanente
-
-Podría mejorar disponibilidad, pero agregaría configuración y dependencia de una plataforma externa. Se mantuvo el backend local para cumplir la restricción académica.
+```text
+BUILD SUCCESSFUL
+```
 
 ---
 
-## 6. Consecuencias
+# Evidencia del pipeline CI
 
-### 6.1 Consecuencias positivas
+La siguiente captura debe mostrar la ejecución del workflow **PendixAPP - CI/CD GitHub Pages** dentro de GitHub Actions.
 
-- El frontend queda disponible permanentemente en GitHub Pages.
-- El despliegue del frontend es gratuito.
+Ruta recomendada:
+
+```text
+assets/02-pipeline-github-actions-verde.png
+```
+
+![Pipeline de GitHub Actions ejecutado correctamente](assets/02-pipeline-github-actions-verde.png)
+
+La captura debe permitir observar:
+
+```text
+- Nombre del workflow.
+- Rama Entrega-Final.
+- Trabajo Validate project.
+- Trabajo Deploy to GitHub Pages.
+- Configuración de Java.
+- Compilación y ejecución de pruebas.
+- Espera de autorización.
+- Check verde después del despliegue.
+```
+
+---
+
+# Evidencia del Pull Request
+
+El Pull Request permite comprobar que los cambios pueden revisarse antes de integrarse a `Entrega-Final` y que el pipeline se ejecuta correctamente.
+
+Ruta recomendada:
+
+```text
+assets/03-pull-request-check-verde.png
+```
+
+![Pull Request con el check verde](assets/03-pull-request-check-verde.png)
+
+Dentro del Pull Request debe aparecer:
+
+```text
+All checks have passed
+```
+
+Después del merge, el trabajo de despliegue debe quedar esperando autorización si el environment `github-pages` tiene revisores obligatorios.
+
+---
+
+# ADR de pruebas automatizadas y CI
+
+La decisión original de incorporar pruebas automatizadas y CI se conserva dentro de la arquitectura final.
+
+Esta decisión establece:
+
+```text
+- Utilizar JUnit 5 para comprobar la lógica de Java.
+- Utilizar Gradle Wrapper para reproducibilidad.
+- Ejecutar pruebas en cada push y Pull Request.
+- Bloquear el despliegue cuando una prueba falla.
+- Conservar evidencia mediante GitHub Actions.
+```
+
+En `Entrega-Final`, la decisión se amplió para incluir:
+
+```text
+- Despliegue del frontend mediante GitHub Pages.
+- Backend Java ejecutado desde la laptop.
+- Publicación temporal mediante Cloudflare Quick Tunnel.
+- Autorización manual antes del despliegue.
+- Configuración CORS entre frontend y backend.
+- Vista responsive.
+- Endpoints de diagnóstico.
+- Evaluación ATAM.
+```
+
+Toda la decisión arquitectónica final se documenta en este mismo README para evitar dividir la información en varios archivos.
+
+---
+
+# ADR final — Separación de frontend, backend y despliegue gratuito
+
+## Estado
+
+```text
+Aceptado
+```
+
+## Contexto
+
+PendixAPP necesitaba ser accesible desde internet sin utilizar AWS, tarjetas bancarias ni infraestructura de pago. También era necesario mostrar una separación entre frontend y backend, mantener pruebas automatizadas, utilizar un pipeline y permitir una autorización antes de publicar cambios.
+
+GitHub Pages solo permite alojar contenido estático. Por ello, no puede ejecutar el backend Java. El backend debe permanecer en una computadora que tenga Java y acceso a internet.
+
+## Decisión
+
+Se decidió implementar la siguiente arquitectura:
+
+```text
+Usuario
+   │
+   ▼
+GitHub Pages
+Frontend HTML, CSS y JavaScript
+   │
+   │ HTTPS
+   ▼
+Cloudflare Quick Tunnel
+   │
+   │ HTTP local
+   ▼
+Laptop del desarrollador
+Backend Java en 127.0.0.1:5018
+```
+
+Las decisiones específicas son:
+
+```text
+1. Publicar el frontend en GitHub Pages.
+2. Ejecutar el backend Java en la laptop.
+3. Utilizar Cloudflare Quick Tunnel para exponer el backend.
+4. Usar el parámetro ?api= para configurar la URL del backend.
+5. Guardar temporalmente la URL del backend en localStorage.
+6. Habilitar CORS en el backend.
+7. Ejecutar pruebas antes de preparar el despliegue.
+8. Usar el environment github-pages para autorización.
+9. Mantener el diseño responsive para teléfonos.
+10. Utilizar serve.sh para iniciar y detener Java y Cloudflare.
+```
+
+## Alternativas consideradas
+
+### AWS
+
+Se descartó debido a la complejidad de configuración, posible requisito de tarjeta y riesgo de cargos.
+
+### Publicar todo únicamente en GitHub Pages
+
+Se descartó porque GitHub Pages no puede ejecutar Java.
+
+### Abrir el puerto 5018 del router
+
+Se descartó por seguridad, configuración de NAT y ausencia de HTTPS administrado.
+
+### Mantener frontend y backend juntos detrás de Cloudflare
+
+Funciona para una demostración, pero no muestra una separación de despliegue tan clara como GitHub Pages más backend local.
+
+### Cloudflare Tunnel con nombre y dominio propio
+
+Es una opción futura para tener una URL estable, pero requiere una cuenta de Cloudflare y un dominio administrado.
+
+## Consecuencias positivas
+
+```text
+- El frontend tiene una URL pública permanente.
 - El backend permanece bajo control del desarrollador.
 - No se abren puertos del router.
 - Cloudflare proporciona HTTPS.
+- No se requiere AWS.
 - El pipeline ejecuta pruebas antes de publicar.
-- El despliegue puede requerir autorización.
-- La historia de cambios queda registrada en Git.
-- La arquitectura muestra separación física entre frontend y backend.
-- La interfaz puede utilizarse desde computadora y teléfono.
-- El pipeline puede mostrar visualmente las etapas de validación y despliegue.
+- El despliegue puede esperar autorización.
+- Se demuestra separación física entre frontend y backend.
+- La solución es suficiente para una demostración académica.
+```
 
-### 6.2 Consecuencias negativas
+## Consecuencias negativas
 
-- El backend depende de que la laptop esté encendida.
-- El backend depende de que Java siga ejecutándose.
-- El backend depende de que `cloudflared` mantenga la conexión.
-- La URL de Quick Tunnel cambia después de cada reinicio.
-- Quick Tunnel no ofrece garantía de disponibilidad.
-- Pueden presentarse errores DNS o Cloudflare 1033.
-- La latencia depende de la conexión de la laptop.
-- El frontend necesita conocer la URL vigente del backend.
-- La persistencia principal continúa en `localStorage`.
-- Los datos no se comparten automáticamente entre dispositivos.
-- GitHub Pages no actualiza el código “en tiempo real”; requiere commit, push, validación, autorización y despliegue.
+```text
+- El backend solo funciona con la laptop encendida.
+- La URL del Quick Tunnel cambia en cada reinicio.
+- Cloudflare Quick Tunnel no ofrece SLA.
+- El rendimiento depende de la conexión local.
+- Una URL antigua provoca errores.
+- Puede aparecer Cloudflare Error 1033.
+- Los datos continúan principalmente en localStorage.
+- Los datos no se comparten entre navegadores.
+```
 
 ---
 
-## 7. Evidencia de implementación
+# Evaluación ATAM
 
-Durante la implementación se comprobó:
+La evaluación ATAM analiza las decisiones arquitectónicas de `Entrega-Final` con base en atributos de calidad, riesgos, trade-offs y puntos de sensibilidad.
 
-- Compilación correcta con Java 21.
-- Ejecución de pruebas con Gradle.
-- Resultado `BUILD SUCCESSFUL`.
-- Respuesta local de `/health` con HTTP 200.
-- Ejecución del JAR `PendixAPP-1.0.0.jar`.
-- Ejecución del proceso `cloudflared`.
-- Respuesta pública de `/health` con HTTP/2 200.
-- Visualización correcta de la aplicación mediante una URL de `trycloudflare.com`.
-- Publicación del frontend en GitHub Pages.
-- Vista adaptable para computadora y teléfono.
-- Aparición de errores reales de DNS y Cloudflare 1033 durante las pruebas.
-- Recuperación del servicio al reiniciar correctamente el túnel.
+## Atributos de calidad prioritarios
 
-Ejemplo de comprobación local:
+| Atributo | Objetivo |
+| :--- | :--- |
+| **Disponibilidad** | Mantener el frontend público y disponer del backend durante la demostración |
+| **Desplegabilidad** | Publicar cambios después de validar pruebas y recibir autorización |
+| **Modificabilidad** | Permitir cambios independientes en frontend, backend y pipeline |
+| **Seguridad** | Evitar abrir puertos del router y utilizar HTTPS |
+| **Usabilidad** | Permitir el uso desde computadora y teléfono |
+| **Trazabilidad** | Registrar commits, pruebas, Pull Requests, aprobaciones y despliegues |
+| **Operabilidad** | Iniciar, comprobar y detener el sistema mediante comandos claros |
+
+## Riesgo arquitectónico R-01 — Dependencia de la laptop y Cloudflare
+
+**Decisión real relacionada:**
+
+```text
+Ejecutar el backend Java en la laptop y publicarlo mediante Cloudflare Quick Tunnel.
+```
+
+**Descripción:**
+
+Si la laptop se apaga, Java termina, la conexión de internet falla o `cloudflared` se desconecta, el backend deja de responder aunque GitHub Pages continúe mostrando la interfaz.
+
+**Evidencia real:**
+
+Durante las pruebas apareció **Cloudflare Error 1033**, que indica que Cloudflare no encontró una conexión activa del túnel.
+
+**Impacto:**
+
+```text
+Alto durante una demostración.
+```
+
+**Mitigación:**
+
+```text
+- Encender Java y cloudflared antes de la presentación.
+- Mantener las terminales abiertas.
+- Comprobar http://127.0.0.1:5018/health.
+- Comprobar la URL pública /health.
+- Evitar cerrar el proceso con Ctrl+C.
+```
+
+## Riesgo arquitectónico R-02 — URL temporal del backend
+
+**Decisión real relacionada:**
+
+```text
+Utilizar un Quick Tunnel sin cuenta y sin dominio permanente.
+```
+
+**Descripción:**
+
+Cada reinicio de Cloudflare puede generar un subdominio diferente. Si GitHub Pages conserva una URL anterior, el frontend no podrá comunicarse con el backend.
+
+**Mitigación:**
+
+```text
+Abrir nuevamente GitHub Pages usando:
+
+?api=https://nueva-url.trycloudflare.com
+```
+
+## Trade-off T-01 — Costo y simplicidad frente a disponibilidad
+
+**Decisión real relacionada:**
+
+```text
+Usar GitHub Pages + laptop + Cloudflare Quick Tunnel en lugar de AWS.
+```
+
+**Beneficio obtenido:**
+
+```text
+- Costo cero.
+- Configuración sencilla.
+- HTTPS.
+- No se requiere abrir puertos.
+- No se requiere tarjeta.
+```
+
+**Costo aceptado:**
+
+```text
+- Menor disponibilidad.
+- Dependencia de la laptop.
+- URL temporal.
+- Ausencia de garantía de servicio.
+```
+
+**Justificación:**
+
+Para una entrega académica y una demostración con pocos usuarios, se priorizó una solución gratuita y comprensible sobre una infraestructura permanente.
+
+## Trade-off T-02 — Aprobación manual frente a rapidez de despliegue
+
+**Decisión real relacionada:**
+
+```text
+Configurar Required reviewers en el environment github-pages.
+```
+
+**Beneficio obtenido:**
+
+Evita que una versión se publique automáticamente sin revisión.
+
+**Costo aceptado:**
+
+El despliegue tarda más y depende de que un revisor autorizado apruebe.
+
+## Punto de sensibilidad S-01 — URL base del backend
+
+**Elemento sensible:**
+
+```text
+?api=https://subdominio.trycloudflare.com
+```
+
+**Decisión real relacionada:**
+
+El frontend almacena dinámicamente la URL de Cloudflare para conectarse al backend.
+
+**Sensibilidad:**
+
+Un cambio mínimo, una URL vencida, un error de escritura o un túnel apagado rompe toda la comunicación entre GitHub Pages y Java.
+
+**Atributos afectados:**
+
+```text
+Disponibilidad, funcionalidad y usabilidad.
+```
+
+**Control:**
+
+```text
+Validar siempre:
+
+https://subdominio.trycloudflare.com/health
+```
+
+## Punto de sensibilidad S-02 — Configuración CORS
+
+**Elemento sensible:**
+
+```text
+Access-Control-Allow-Origin
+Access-Control-Allow-Methods
+Access-Control-Allow-Headers
+```
+
+**Decisión real relacionada:**
+
+Frontend y backend se ejecutan en dominios distintos.
+
+**Sensibilidad:**
+
+Una cabecera incorrecta puede provocar que el navegador bloquee todas las solicitudes, aunque el backend esté encendido.
+
+## Resumen ATAM
+
+| Clasificación | Elemento | Justificación |
+| :--- | :--- | :--- |
+| **Riesgo** | Dependencia de laptop y Cloudflare | El backend desaparece si Java o el túnel se detienen |
+| **Trade-off** | Costo frente a disponibilidad | Se evitó AWS, pero se aceptó menor disponibilidad |
+| **Punto de sensibilidad** | URL del backend | Una URL antigua o incorrecta rompe la integración |
+| **Punto de sensibilidad** | CORS | Una configuración incorrecta bloquea las solicitudes |
+
+## Conclusión ATAM
+
+La arquitectura es adecuada para una entrega académica porque cumple con costo cero, separación frontend-backend, HTTPS, CI/CD, autorización y trazabilidad.
+
+No es una arquitectura de producción porque el backend depende de la laptop, Quick Tunnel utiliza una URL temporal y los datos continúan principalmente en `localStorage`.
+
+---
+
+# Estructura principal de la rama
+
+```text
+Proyecto_ArqSoft/
+│
+├── .github/
+│   └── workflows/
+│       └── pages.yml
+│
+├── README.md
+│
+└── PendixAPP/
+    ├── build.gradle
+    ├── settings.gradle
+    ├── gradlew
+    ├── gradlew.bat
+    ├── serve.sh
+    │
+    ├── gradle/
+    │   └── wrapper/
+    │       ├── gradle-wrapper.jar
+    │       └── gradle-wrapper.properties
+    │
+    ├── src/
+    │   ├── main/
+    │   │   ├── java/
+    │   │   │   ├── GzipSupport.java
+    │   │   │   ├── HttpResult.java
+    │   │   │   ├── Pendiente.java
+    │   │   │   ├── PendienteService.java
+    │   │   │   ├── PendixAppServer.java
+    │   │   │   ├── PendixRouter.java
+    │   │   │   └── StaticResourceService.java
+    │   │   │
+    │   │   └── resources/
+    │   │       └── static/
+    │   │           ├── index.html
+    │   │           ├── styles.css
+    │   │           └── app.js
+    │   │
+    │   └── test/
+    │       └── java/
+    │           ├── GzipSupportTest.java
+    │           ├── HttpResultTest.java
+    │           ├── PendienteTest.java
+    │           ├── PendienteServiceTest.java
+    │           └── PendixRouterTest.java
+    │
+    ├── iniciar_linux.sh
+    ├── iniciar_mac.command
+    ├── INICIAR_WINDOWS.bat
+    ├── compilar_y_ejecutar_linux.sh
+    └── README_EJECUCION.md
+```
+
+---
+
+# Ejecución de PendixAPP
+
+Además de las pruebas automatizadas, la aplicación puede ejecutarse localmente para comprobar su funcionamiento visual.
+
+Desde la carpeta `PendixAPP`:
+
+```bash
+./gradlew clean build
+java -jar build/libs/PendixAPP-1.0.0.jar
+```
+
+Después se abre en el navegador:
+
+```text
+http://127.0.0.1:5018
+```
+
+También puede utilizarse:
+
+```bash
+bash iniciar_linux.sh
+```
+
+La interfaz conserva:
+
+```text
+- Gestión visual de pendientes.
+- Filtros por estado.
+- Notificaciones vencidas.
+- Calendario y recordatorios.
+- Sección de planes.
+- Inicio de sesión simulado.
+- Tema oscuro con tonos púrpuras.
+- Vista para computadora.
+- Vista responsive para teléfono.
+```
+
+## Publicar backend y frontend juntos
+
+Para encender Java y Cloudflare con un solo comando:
+
+```bash
+cd /home/avenkal/Descargas/Proyecto_ArqSoft_CI/PendixAPP
+chmod +x serve.sh
+./serve.sh
+```
+
+La terminal debe permanecer abierta.
+
+El script muestra una URL similar a:
+
+```text
+https://nombre-temporal.trycloudflare.com
+```
+
+Para conectar GitHub Pages con esa URL:
+
+```text
+https://angel-lugo97.github.io/Proyecto_ArqSoft/?api=https://nombre-temporal.trycloudflare.com
+```
+
+## Ejecutar Java y Cloudflare por separado
+
+Terminal 1:
+
+```bash
+cd /home/avenkal/Descargas/Proyecto_ArqSoft_CI/PendixAPP
+
+./gradlew clean build
+java -jar build/libs/PendixAPP-1.0.0.jar
+```
+
+Terminal 2:
+
+```bash
+cd /home/avenkal/Descargas/Proyecto_ArqSoft_CI/PendixAPP
+
+cloudflared tunnel \
+  --no-autoupdate \
+  --protocol http2 \
+  --edge-ip-version 4 \
+  --url http://127.0.0.1:5018
+```
+
+Comprobación local:
 
 ```bash
 curl -i http://127.0.0.1:5018/health
 ```
 
-Resultado esperado:
-
-```text
-HTTP/1.1 200 OK
-{"status":"ok"}
-```
-
-Ejemplo de comprobación pública:
+Comprobación pública:
 
 ```bash
-curl -i https://<subdominio>.trycloudflare.com/health
+curl -i https://nombre-temporal.trycloudflare.com/health
 ```
 
-Resultado esperado:
+Para apagar ambos procesos:
 
 ```text
-HTTP/2 200
-{"status":"ok"}
+Ctrl+C
 ```
 
 ---
 
-# 8. Evaluación ATAM
-
-## 8.1 Objetivo
-
-La evaluación ATAM analiza cómo las decisiones de arquitectura afectan disponibilidad, desplegabilidad, modificabilidad, seguridad, rendimiento, usabilidad y trazabilidad.
-
-La decisión principal evaluada es:
-
-> Publicar el frontend en GitHub Pages y ejecutar el backend Java en la laptop, exponiéndolo temporalmente mediante Cloudflare Quick Tunnel, con un pipeline de GitHub Actions y autorización manual del despliegue.
-
----
-
-## 8.2 Atributos de calidad prioritarios
-
-| Atributo | Objetivo |
-|---|---|
-| Disponibilidad | Mantener el frontend accesible y permitir acceso temporal al backend durante la demostración. |
-| Desplegabilidad | Publicar cambios después de validar pruebas y obtener autorización. |
-| Modificabilidad | Permitir cambios separados en frontend, backend y pipeline. |
-| Seguridad | Evitar abrir puertos del router y utilizar HTTPS. |
-| Rendimiento | Mantener tiempos adecuados para pocos usuarios durante la demostración. |
-| Usabilidad | Permitir uso desde computadora y teléfono. |
-| Trazabilidad | Registrar commits, pruebas, aprobaciones y despliegues. |
-| Operabilidad | Poder iniciar, comprobar y detener el sistema con comandos claros. |
-
----
-
-## 8.3 Escenarios de calidad
-
-### Escenario QA-01 — Disponibilidad del backend
-
-- **Fuente:** usuario externo.
-- **Estímulo:** intenta acceder a una función que requiere el backend.
-- **Entorno:** frontend publicado en GitHub Pages.
-- **Artefacto:** backend Java y túnel.
-- **Respuesta esperada:** la solicitud llega mediante HTTPS al túnel y recibe respuesta HTTP 200.
-- **Medida:** `/health` responde en menos de 5 segundos durante la demostración.
-
-### Escenario QA-02 — Validación antes del despliegue
-
-- **Fuente:** desarrollador o colaborador.
-- **Estímulo:** realiza un push o abre un Pull Request.
-- **Entorno:** repositorio GitHub.
-- **Artefacto:** workflow de GitHub Actions.
-- **Respuesta esperada:** se ejecutan las pruebas antes de permitir el despliegue.
-- **Medida:** ningún despliegue se realiza si las pruebas fallan.
-
-### Escenario QA-03 — Autorización manual
-
-- **Fuente:** revisor autorizado.
-- **Estímulo:** recibe un despliegue pendiente.
-- **Entorno:** environment `github-pages`.
-- **Artefacto:** trabajo `Deploy to GitHub Pages`.
-- **Respuesta esperada:** el trabajo queda pausado hasta que el revisor aprueba.
-- **Medida:** el frontend no cambia antes de la aprobación.
-
-### Escenario QA-04 — Cambio de URL del backend
-
-- **Fuente:** desarrollador.
-- **Estímulo:** reinicia Quick Tunnel y recibe una URL diferente.
-- **Entorno:** frontend ya desplegado.
-- **Artefacto:** parámetro `?api=` y `localStorage`.
-- **Respuesta esperada:** se proporciona la nueva URL sin tener que reconstruir el frontend.
-- **Medida:** el navegador puede consultar `/health` usando la nueva dirección.
-
-### Escenario QA-05 — Uso móvil
-
-- **Fuente:** usuario.
-- **Estímulo:** abre la aplicación desde un teléfono.
-- **Entorno:** pantalla pequeña.
-- **Artefacto:** frontend responsive.
-- **Respuesta esperada:** contenido legible, botones utilizables y navegación accesible.
-- **Medida:** no se requiere desplazamiento horizontal para usar las funciones principales.
-
----
-
-## 8.4 Riesgos arquitectónicos
-
-### R-01 — Dependencia de la laptop y de Quick Tunnel
-
-- **Tipo:** riesgo de disponibilidad.
-- **Decisión relacionada:** ejecutar el backend localmente y publicarlo mediante Quick Tunnel.
-- **Descripción:** si la laptop se apaga, Java termina, la red falla o `cloudflared` se desconecta, el backend deja de responder.
-- **Evidencia real:** durante las pruebas apareció el error Cloudflare 1033 cuando el túnel no tenía una conexión activa.
-- **Impacto:** alto durante la demostración.
-- **Probabilidad:** media.
-- **Mitigación:** iniciar Java y Cloudflare antes de la presentación, mantener las terminales abiertas y comprobar `/health`.
-- **Evolución recomendada:** utilizar un túnel con nombre o desplegar el backend en infraestructura permanente.
-
-### R-02 — URL temporal del backend
-
-- **Tipo:** riesgo de configuración.
-- **Decisión relacionada:** usar Quick Tunnel.
-- **Descripción:** cada ejecución puede generar una URL diferente. Una URL antigua produce fallos de conexión.
-- **Impacto:** alto para funciones dependientes del backend.
-- **Probabilidad:** alta.
-- **Mitigación:** actualizar el parámetro `?api=` y validar la nueva URL mediante `/health`.
-
-### R-03 — Persistencia distribuida en `localStorage`
-
-- **Tipo:** riesgo de consistencia e integridad.
-- **Decisión relacionada:** mantener los pendientes principalmente en el navegador.
-- **Descripción:** cada dispositivo conserva datos diferentes; no existe una única fuente de verdad.
-- **Impacto:** medio.
-- **Probabilidad:** alta.
-- **Mitigación:** documentar la limitación.
-- **Evolución recomendada:** implementar CRUD completo en Java y una base de datos central.
-
-### R-04 — Configuración incorrecta de CORS
-
-- **Tipo:** riesgo de interoperabilidad.
-- **Decisión relacionada:** frontend y backend se ejecutan en dominios diferentes.
-- **Descripción:** una cabecera CORS incorrecta puede bloquear todas las solicitudes desde GitHub Pages.
-- **Impacto:** alto.
-- **Probabilidad:** media.
-- **Mitigación:** probar solicitudes desde el origen real y manejar peticiones `OPTIONS`.
-
----
-
-## 8.5 Trade-offs arquitectónicos
-
-### T-01 — Costo y simplicidad frente a disponibilidad
-
-- **Decisión:** utilizar GitHub Pages y Cloudflare Quick Tunnel en lugar de infraestructura de pago.
-- **Beneficio:** costo cero, HTTPS y configuración rápida.
-- **Costo:** URL temporal, ausencia de SLA y dependencia de la laptop.
-- **Atributos favorecidos:** costo, simplicidad y seguridad de red.
-- **Atributos afectados:** disponibilidad, confiabilidad y operabilidad.
-- **Justificación:** para una demostración académica, el costo y la facilidad de implementación tienen mayor prioridad que la disponibilidad permanente.
-
-### T-02 — Separación del frontend frente a complejidad operacional
-
-- **Decisión:** publicar frontend y backend en ubicaciones distintas.
-- **Beneficio:** mejor separación de responsabilidades, modificabilidad y trazabilidad.
-- **Costo:** necesidad de CORS, configuración de `API_BASE_URL` y administración de la URL temporal.
-- **Atributos favorecidos:** modificabilidad y desplegabilidad.
-- **Atributos afectados:** simplicidad de operación.
-
-### T-03 — Aprobación manual frente a rapidez de despliegue
-
-- **Decisión:** utilizar un environment con revisores.
-- **Beneficio:** evita publicar cambios sin revisión.
-- **Costo:** el despliegue tarda más y depende de que un revisor esté disponible.
-- **Atributos favorecidos:** seguridad de cambios, control y trazabilidad.
-- **Atributos afectados:** velocidad de entrega.
-
-### T-04 — `localStorage` frente a persistencia central
-
-- **Decisión:** conservar datos en el navegador para mantener la implementación sencilla.
-- **Beneficio:** no requiere base de datos ni configuración adicional.
-- **Costo:** los datos no se comparten y pueden perderse al limpiar el navegador.
-- **Atributos favorecidos:** simplicidad y rapidez de desarrollo.
-- **Atributos afectados:** consistencia, colaboración y confiabilidad de datos.
-
----
-
-## 8.6 Puntos de sensibilidad
-
-### S-01 — URL base del backend
-
-- **Elemento sensible:** valor configurado mediante `?api=` y guardado en `localStorage`.
-- **Sensibilidad:** un solo carácter incorrecto, una URL vencida o un túnel apagado rompe toda la comunicación con el backend.
-- **Atributos afectados:** disponibilidad, funcionalidad y usabilidad.
-- **Control:** validar `/health` antes de guardar o compartir la URL.
-
-### S-02 — Configuración CORS
-
-- **Elemento sensible:** `Access-Control-Allow-Origin`, métodos y headers permitidos.
-- **Sensibilidad:** una modificación pequeña puede bloquear todas las solicitudes del navegador.
-- **Atributos afectados:** seguridad, interoperabilidad y disponibilidad funcional.
-- **Control:** mantener solo los métodos necesarios y probar desde la URL real de GitHub Pages.
-
-### S-03 — Puerto local 5018
-
-- **Elemento sensible:** puerto del servidor Java.
-- **Sensibilidad:** si está ocupado, el backend no inicia; si el túnel apunta a otro puerto, las solicitudes fallan.
-- **Atributos afectados:** disponibilidad y operabilidad.
-- **Control:** comprobar el puerto con `ss`, `lsof` o `/health`.
-
-### S-04 — Procesos Java y `cloudflared`
-
-- **Elemento sensible:** ciclo de vida de ambos procesos.
-- **Sensibilidad:** la terminación de cualquiera de los dos deja el backend inaccesible.
-- **Atributos afectados:** disponibilidad.
-- **Control:** ejecutar mediante `serve.sh`, usar `trap` y mantener la terminal abierta.
-
-### S-05 — Reglas del environment `github-pages`
-
-- **Elemento sensible:** configuración de reviewers y `Prevent self-review`.
-- **Sensibilidad:** una regla incorrecta puede permitir un despliegue sin revisión o impedir que alguien pueda aprobar.
-- **Atributos afectados:** seguridad del proceso y desplegabilidad.
-- **Control:** verificar los revisores antes de la demostración.
-
----
-
-## 8.7 Resumen ATAM
-
-| Clasificación | Elemento | Resultado |
-|---|---|---|
-| Riesgo | Backend local y Quick Tunnel | Puede quedar inaccesible al apagar la laptop o perder la conexión. |
-| Riesgo | Persistencia en `localStorage` | Los datos no se comparten entre navegadores. |
-| Trade-off | Solución gratuita frente a disponibilidad | Se acepta menor disponibilidad para evitar costos. |
-| Trade-off | Aprobación manual frente a rapidez | Se obtiene control a cambio de mayor tiempo de despliegue. |
-| Punto de sensibilidad | URL del backend | Una URL incorrecta rompe la integración. |
-| Punto de sensibilidad | CORS | Una configuración incorrecta bloquea el navegador. |
-| Punto de sensibilidad | Puerto y procesos | El backend depende de que Java y Cloudflare permanezcan activos. |
-
----
-
-## 8.8 Conclusión ATAM
-
-La arquitectura es adecuada para una entrega académica y una demostración con pocos usuarios. Permite mostrar separación entre frontend y backend, uso de CI/CD, pruebas automáticas, autorización manual y publicación gratuita.
-
-No debe considerarse una arquitectura de producción porque el backend depende de la laptop, Quick Tunnel utiliza una URL temporal y los datos continúan distribuidos en `localStorage`.
-
-Las prioridades de una siguiente versión deben ser:
-
-1. Implementar un CRUD central en el backend.
-2. Incorporar una base de datos local o remota.
-3. Sustituir Quick Tunnel por una URL estable.
-4. Limitar CORS al dominio exacto de GitHub Pages.
-5. Agregar autenticación real.
-6. Incorporar observabilidad y registros persistentes.
-
----
-
-# 9. Modelo C4 actualizado
-
-## 9.1 Nivel 1 — Contexto
-
-```mermaid
-flowchart LR
-    Usuario["Persona: Usuario final<br/>Usa PendixAPP desde computadora o teléfono"]
-    Desarrollador["Persona: Desarrollador o colaborador<br/>Modifica y publica el sistema"]
-    Revisor["Persona: Revisor autorizado<br/>Aprueba el despliegue"]
-
-    Pendix["Sistema: PendixAPP<br/>Gestión web de pendientes"]
-    GitHub["Sistema externo: GitHub<br/>Repositorio, Actions y Pages"]
-    Cloudflare["Sistema externo: Cloudflare Quick Tunnel<br/>Entrada HTTPS temporal al backend"]
-
-    Usuario -->|"Usa la aplicación"| Pendix
-    Desarrollador -->|"Commit, push y Pull Request"| GitHub
-    Revisor -->|"Autoriza despliegue"| GitHub
-    GitHub -->|"Publica frontend"| Pendix
-    Cloudflare -->|"Expone backend local"| Pendix
+## Evidencia de ejecución funcional
+
+![Captura de ejecución funcional de PendixAPP](Captura.png)
+
+```text
+URL local: http://127.0.0.1:5018
+Frontend: https://angel-lugo97.github.io/Proyecto_ArqSoft/
+Backend público: URL temporal de trycloudflare.com
+Java: 21
+Puerto: 5018
 ```
 
-## 9.2 Nivel 2 — Contenedores
+La evidencia final también debe mostrar:
 
-```mermaid
-flowchart LR
-    Usuario["Usuario"]
-    Desarrollador["Desarrollador"]
-    Revisor["Revisor"]
-
-    subgraph GitHubCloud["GitHub"]
-        Repo["Repositorio Git<br/>Código y documentación"]
-        Actions["GitHub Actions<br/>Pruebas, artefacto y despliegue"]
-        Environment["Environment github-pages<br/>Aprobación manual"]
-        Pages["GitHub Pages<br/>Frontend estático HTTPS"]
-    end
-
-    subgraph Navegador["Navegador del usuario"]
-        Browser["Aplicación web<br/>HTML, CSS y JavaScript"]
-        LocalStorage["localStorage<br/>URL del backend, pendientes y sesión simulada"]
-    end
-
-    subgraph Laptop["Laptop del desarrollador"]
-        Cloudflared["cloudflared<br/>Quick Tunnel"]
-        JavaServer["Backend Java 21<br/>HttpServer :5018"]
-        Api["API HTTP<br/>/health, /version y /api/pendientes"]
-    end
-
-    Desarrollador --> Repo
-    Repo --> Actions
-    Actions --> Environment
-    Revisor --> Environment
-    Environment --> Pages
-
-    Usuario --> Pages
-    Pages --> Browser
-    Browser --> LocalStorage
-    Browser -->|"HTTPS + API_BASE_URL"| Cloudflared
-    Cloudflared -->|"HTTP local"| JavaServer
-    JavaServer --> Api
-```
-
-## 9.3 Nivel 3 — Componentes
-
-```mermaid
-flowchart TB
-    subgraph Frontend["Frontend en GitHub Pages"]
-        Index["index.html<br/>Estructura de la interfaz"]
-        Styles["styles.css<br/>Diseño responsive"]
-        App["app.js<br/>Interacciones y acceso a API"]
-        ApiConfig["API_BASE_URL<br/>?api= y localStorage"]
-    end
-
-    subgraph Pipeline["GitHub Actions"]
-        Checkout["Checkout"]
-        Setup["Java 21"]
-        Tests["Pruebas Gradle"]
-        Artifact["Artefacto estático"]
-        Approval["Environment github-pages<br/>Autorización"]
-        Deploy["Deploy to GitHub Pages"]
-    end
-
-    subgraph Backend["Backend en la laptop"]
-        Script["serve.sh<br/>Build, Java y Cloudflare"]
-        Server["PendixAppServer<br/>Servidor HTTP"]
-        Handler["Handler<br/>CORS, compresión y respuestas"]
-        Router["PendixRouter<br/>Resolución de rutas"]
-        Domain["PendienteService y Pendiente<br/>Lógica de dominio"]
-        Health["/health y /version"]
-        Tunnel["cloudflared<br/>URL HTTPS temporal"]
-    end
-
-    Index --> Styles
-    Index --> App
-    App --> ApiConfig
-    ApiConfig --> Tunnel
-
-    Checkout --> Setup
-    Setup --> Tests
-    Tests --> Artifact
-    Artifact --> Approval
-    Approval --> Deploy
-    Deploy --> Index
-
-    Script --> Server
-    Script --> Tunnel
-    Tunnel --> Server
-    Server --> Handler
-    Handler --> Router
-    Router --> Domain
-    Router --> Health
+```text
+- La vista de computadora.
+- La vista desde un teléfono.
+- El endpoint /health.
+- La URL pública de Cloudflare.
+- GitHub Pages funcionando.
+- El pipeline en verde.
+- La espera de autorización.
 ```
 
 ---
 
-# 10. Criterios de aceptación
+# Historial de commits
 
-La decisión se considera implementada cuando:
+La actividad se desarrolló inicialmente mediante commits separados para mostrar la evolución del trabajo. En la integración final también se incorporó un commit amplio para consolidar los cambios de despliegue.
 
-- `./gradlew clean test` termina con `BUILD SUCCESSFUL`.
-- El backend local responde en `http://127.0.0.1:5018/health`.
-- Cloudflare genera una URL HTTPS temporal.
-- La URL pública responde con HTTP 200.
-- GitHub Pages muestra el frontend.
-- GitHub Actions presenta trabajos separados de validación y despliegue.
-- El despliegue puede quedar en espera de autorización.
-- La interfaz funciona en computadora y teléfono.
-- El frontend puede recibir una nueva URL del backend mediante `?api=`.
-- La documentación identifica al menos un riesgo, un trade-off y un punto de sensibilidad.
+Ejemplos de commits utilizados:
+
+```text
+docs: documentar clases probadas y estrategia de CI
+ci: configurar pipeline de pruebas con GitHub Actions
+test: agregar suite JUnit con Arrange Act Assert
+refactor: preparar PendixAPP para pruebas automatizadas
+fix: ubicar workflow en la raiz del repositorio
+feat(project): add mobile interface and local Cloudflare deployment
+ci: add Gradle build and test pipeline
+feat(deploy): separate frontend and deploy with GitHub Pages
+fix(deploy): keep Cloudflare tunnel alive
+docs(readme): update final branch documentation
+```
+
+Para consultar el historial:
+
+```bash
+git log --oneline --decorate --graph -15
+```
+
+La separación de commits permite distinguir:
+
+```text
+- Preparación y refactorización del proyecto.
+- Incorporación de pruebas.
+- Configuración del pipeline.
+- Adaptación responsive.
+- Separación del frontend.
+- Publicación mediante Cloudflare.
+- Despliegue en GitHub Pages.
+- Autorización del despliegue.
+- Documentación arquitectónica.
+```
 
 ---
 
-# 11. Estado final de la decisión
+# Proceso de trabajo con Git
 
-**Aceptada para la entrega académica.**
+Cambiar a la rama:
 
-La solución cumple los objetivos de costo, separación, trazabilidad, despliegue y demostración. Sus limitaciones de disponibilidad y persistencia se aceptan conscientemente porque el alcance actual prioriza una implementación gratuita, sencilla y demostrable.
+```bash
+git switch Entrega-Final
+```
+
+Actualizar la rama:
+
+```bash
+git pull origin Entrega-Final
+```
+
+Ejecutar pruebas:
+
+```bash
+cd PendixAPP
+./gradlew clean test build --no-daemon
+```
+
+Subir cambios:
+
+```bash
+cd ..
+git add -A
+git commit -m "docs(readme): update final project documentation"
+git push origin Entrega-Final
+```
+
+Flujo recomendado para un colaborador:
+
+```bash
+git switch Entrega-Final
+git pull origin Entrega-Final
+git switch -c cambio-colaborador
+```
+
+Después:
+
+```bash
+git add -A
+git commit -m "feat: update PendixAPP"
+git push -u origin cambio-colaborador
+```
+
+Finalmente debe crear un Pull Request:
+
+```text
+cambio-colaborador → Entrega-Final
+```
+
+---
+
+# Cómo revisar la rama en GitHub
+
+```text
+1. Entrar al repositorio Proyecto_ArqSoft.
+2. Cambiar a la rama Entrega-Final.
+3. Abrir README.md.
+4. Revisar PendixAPP/src/test/java.
+5. Confirmar que existen pruebas para al menos tres clases.
+6. Revisar .github/workflows/pages.yml.
+7. Entrar en la pestaña Actions.
+8. Abrir PendixAPP - CI/CD GitHub Pages.
+9. Confirmar que Validate project aparece en verde.
+10. Confirmar que Deploy to GitHub Pages aparece como segundo trabajo.
+11. Revisar la espera de autorización.
+12. Aprobar desde Review deployments.
+13. Confirmar el despliegue en GitHub Pages.
+14. Abrir https://angel-lugo97.github.io/Proyecto_ArqSoft/.
+15. Ejecutar el backend Java en la laptop.
+16. Ejecutar Cloudflare Tunnel.
+17. Conectar GitHub Pages mediante ?api=.
+18. Probar la aplicación desde un teléfono.
+19. Revisar el Pull Request.
+20. Verificar que aparezca All checks have passed.
+21. Revisar el historial de commits.
+22. Revisar el ADR y la evaluación ATAM integrados en este README.
+```
+
+---
+
+# Lista de verificación de la actividad
+
+```text
+[x] Se agregó una suite de pruebas automatizadas.
+[x] Se utilizó JUnit 5 como framework xUnit para Java.
+[x] Se probaron al menos tres clases del proyecto.
+[x] Se probaron cinco componentes en total.
+[x] Las pruebas siguen Arrange–Act–Assert.
+[x] Las pruebas se ejecutan mediante Gradle.
+[x] La compilación local termina en BUILD SUCCESSFUL.
+[x] Se agregó el Gradle Wrapper.
+[x] Se configuró Java 21.
+[x] Se creó un workflow de GitHub Actions.
+[x] El workflow se ejecuta en cada push.
+[x] El workflow se ejecuta en cada Pull Request.
+[x] El pipeline compila y ejecuta las pruebas.
+[x] El frontend se separó en HTML, CSS y JavaScript.
+[x] Se agregó una vista responsive.
+[x] Se agregó el endpoint /health.
+[x] Se agregó el endpoint /version.
+[x] Se agregó compresión GZIP.
+[x] Se agregó configuración CORS.
+[x] Se creó serve.sh.
+[x] El backend funciona en la laptop.
+[x] El backend se publica mediante Cloudflare Quick Tunnel.
+[x] El frontend se publicó en GitHub Pages.
+[x] El pipeline prepara y despliega GitHub Pages.
+[x] Se configuró un environment para autorización.
+[x] Se documentó un ADR final.
+[x] Se agregó una evaluación ATAM.
+[x] ATAM contiene al menos un riesgo.
+[x] ATAM contiene al menos un trade-off.
+[x] ATAM contiene al menos un punto de sensibilidad.
+[x] Los elementos ATAM están justificados con decisiones reales.
+[x] Se conservó la cláusula de IA.
+[ ] Agregar la captura del reporte local en assets.
+[ ] Agregar la captura del pipeline verde en assets.
+[ ] Agregar la captura del Pull Request en assets.
+[ ] Agregar captura de Waiting for approval.
+[ ] Agregar captura de GitHub Pages.
+[ ] Agregar captura de Cloudflare funcionando.
+[ ] Agregar captura de la vista móvil.
+[ ] Copiar el enlace del Pull Request para la entrega.
+[ ] Entregar el enlace actualizado del repositorio.
+```
+
+---
+
+# Mejoras futuras
+
+```text
+[ ] Agregar pruebas para rutas HTTP adicionales.
+[ ] Incorporar pruebas parametrizadas.
+[ ] Agregar pruebas para fechas y pendientes vencidos.
+[ ] Agregar pruebas de integración del servidor.
+[ ] Publicar el reporte de pruebas como artefacto de GitHub Actions.
+[ ] Agregar análisis de cobertura con JaCoCo.
+[ ] Definir un porcentaje mínimo de cobertura.
+[ ] Bloquear la integración cuando el pipeline falle.
+[ ] Proteger la rama principal mediante reglas de revisión.
+[ ] Separar pruebas unitarias y pruebas de integración.
+[ ] Ejecutar análisis estático del código.
+[ ] Implementar CRUD completo en el backend.
+[ ] Agregar una base de datos central.
+[ ] Sustituir localStorage como fuente principal de datos.
+[ ] Implementar autenticación real.
+[ ] Utilizar un Cloudflare Tunnel con nombre.
+[ ] Configurar un dominio permanente.
+[ ] Limitar CORS al dominio exacto de GitHub Pages.
+[ ] Agregar logs persistentes.
+[ ] Agregar monitoreo del backend.
+[ ] Automatizar la actualización de la URL del backend.
+```
+
+---
+
+# Resultado de esta rama
+
+La rama **`Entrega-Final`** transforma PendixAPP en una solución demostrable mediante una arquitectura distribuida y gratuita.
+
+La validación automatizada de la rama anterior se conserva:
+
+```text
+- Gradle compila el proyecto.
+- JUnit ejecuta las pruebas.
+- GitHub Actions valida cada cambio.
+```
+
+Además, se incorporó:
+
+```text
+- Frontend publicado en GitHub Pages.
+- Backend Java ejecutado en la laptop.
+- Cloudflare Tunnel para acceso HTTPS.
+- Vista responsive para teléfonos.
+- Endpoints de salud y versión.
+- Compresión de recursos.
+- Configuración CORS.
+- Pipeline CI/CD.
+- Autorización manual.
+- ADR final.
+- Evaluación ATAM.
+```
+
+El frontend queda disponible permanentemente en:
+
+```text
+https://angel-lugo97.github.io/Proyecto_ArqSoft/
+```
+
+El backend permanece disponible mientras Java y Cloudflare estén ejecutándose en la laptop.
+
+---
+
+# Conclusión
+
+En esta rama se conservó y amplió la suite de pruebas automatizadas de PendixAPP. Las pruebas fueron desarrolladas con JUnit 5, siguen la estructura Arrange–Act–Assert y validan la entidad `Pendiente`, el servicio `PendienteService`, el router `PendixRouter`, las respuestas `HttpResult` y la compresión `GzipSupport`.
+
+También se mantuvo Gradle con Java 21 para compilar el proyecto y ejecutar la suite de forma local y automática.
+
+La arquitectura final separa el frontend del backend. El frontend se publica mediante GitHub Pages y el backend Java se ejecuta en la laptop del desarrollador. Cloudflare Quick Tunnel permite acceder temporalmente al backend desde internet mediante HTTPS.
+
+Finalmente, se configuró un workflow de GitHub Actions que valida las pruebas, prepara el frontend, espera autorización y despliega GitHub Pages. La evaluación ATAM identifica riesgos, trade-offs y puntos de sensibilidad relacionados con decisiones reales de esta arquitectura.
+
+Con estos cambios, PendixAPP cuenta con una base para validar futuras modificaciones, detectar regresiones, controlar despliegues y demostrar una arquitectura separada sin utilizar AWS.
+
+---
+
+## Cláusula de IA
+
+```text
+Yo, Angel Abraham Lugo Saenz, declaro que utilicé IA como apoyo para analizar la estructura de PendixAPP, organizar la suite de pruebas, configurar el pipeline de Integración Continua y redactar la documentación de esta rama.
+
+El código, las decisiones del proyecto, la ejecución de las pruebas, la validación del pipeline y la adaptación final de la documentación fueron revisados como parte de la actividad escolar de Arquitectura de Software.
+```
+
+Para la rama `Entrega-Final`, la IA también se utilizó como apoyo para organizar la documentación relacionada con GitHub Pages, Cloudflare Tunnel, la separación entre frontend y backend, la adaptación móvil, el pipeline CI/CD, el proceso de autorización y la evaluación ATAM.
+
+Las decisiones arquitectónicas finales, la ejecución de comandos, la verificación del backend, la publicación del frontend, las pruebas, la revisión de los resultados y la validación de la entrega fueron realizadas y supervisadas como parte de la actividad escolar de Arquitectura de Software.
