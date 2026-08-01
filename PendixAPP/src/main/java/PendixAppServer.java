@@ -10,6 +10,7 @@ import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 
 public class PendixAppServer {
     private static final int DEFAULT_PORT = 5018;
@@ -35,6 +36,8 @@ public class PendixAppServer {
         String url = "http://" + browserHost + ":" + port;
 
         try {
+            inicializarBaseDeDatosSiEstaHabilitada();
+
             HttpServer server = HttpServer.create(
                     new InetSocketAddress(host, port),
                     0
@@ -69,12 +72,61 @@ public class PendixAppServer {
             System.out.println("Abre directamente: " + url);
             System.out.println("O cierra el proceso que está usando ese puerto.");
             System.out.println();
+        } catch (SQLException e) {
+            System.err.println();
+            System.err.println(
+                    "No se pudo inicializar PostgreSQL."
+            );
+            System.err.println(
+                    "Detalle: " + e.getMessage()
+            );
+            System.err.println();
+
+            System.exit(1);
         } catch (IOException e) {
             System.out.println(
                     "No se pudo iniciar PendixAPP en el puerto " + port + "."
             );
             System.out.println("Detalle: " + e.getMessage());
         }
+    }
+
+    private static void inicializarBaseDeDatosSiEstaHabilitada()
+            throws SQLException {
+        boolean enabled = Boolean.parseBoolean(
+                obtenerVariable(
+                        "DATABASE_INIT_ENABLED",
+                        "false"
+                )
+        );
+
+        if (!enabled) {
+            System.out.println(
+                    "Inicialización de PostgreSQL deshabilitada."
+            );
+            return;
+        }
+
+        DatabaseConfig config =
+                DatabaseConfig.desdeEntorno();
+
+        System.out.println(
+                "Inicializando PostgreSQL en: "
+                        + config.url()
+        );
+
+        DatabaseInitializer initializer =
+                new DatabaseInitializer(
+                        new DatabaseConnectionFactory(
+                                config
+                        )
+                );
+
+        initializer.inicializar();
+
+        System.out.println(
+                "Esquema y datos iniciales verificados."
+        );
     }
 
     private static int obtenerPuerto() {
