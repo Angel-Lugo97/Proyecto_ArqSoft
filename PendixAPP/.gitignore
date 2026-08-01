@@ -3,3 +3,6 @@ build/
 out/
 *.class
 *.log
+
+# Local database credentials
+.env
