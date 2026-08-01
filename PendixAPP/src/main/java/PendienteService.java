@@ -37,21 +37,58 @@ public class PendienteService {
         );
     }
 
+    public Pendiente obtener(
+            int id
+    ) {
+        return buscarPorId(id)
+                .orElseThrow(
+                        () ->
+                                new PendienteNoEncontradoException(
+                                        id
+                                )
+                );
+    }
+
+    public Pendiente actualizar(
+            int id,
+            Pendiente cambios
+    ) {
+        obtener(id);
+
+        Pendiente actualizado =
+                new Pendiente(
+                        id,
+                        cambios.titulo(),
+                        cambios.estado()
+                );
+
+        return repository.actualizar(
+                actualizado
+        );
+    }
+
     public Pendiente completar(
             int id
     ) {
-        Pendiente actual = buscarPorId(id)
-                .orElseThrow(
-                        () ->
-                                new IllegalArgumentException(
-                                        "Pendiente no encontrado: "
-                                                + id
-                                )
-                );
+        Pendiente actual =
+                obtener(id);
 
         return repository.actualizar(
                 actual.completar()
         );
+    }
+
+    public void eliminar(
+            int id
+    ) {
+        boolean eliminado =
+                repository.eliminarPorId(id);
+
+        if (!eliminado) {
+            throw new PendienteNoEncontradoException(
+                    id
+            );
+        }
     }
 
     public List<Pendiente> listar() {
@@ -59,40 +96,16 @@ public class PendienteService {
     }
 
     public String listarComoJson() {
-        return listar().stream()
-                .map(
-                        pendiente ->
-                                "{\"id\":"
-                                        + pendiente.id()
-                                        + ",\"titulo\":\""
-                                        + escaparJson(
-                                                pendiente.titulo()
-                                        )
-                                        + "\",\"estado\":\""
-                                        + pendiente.estado()
-                                        + "\"}"
-                )
-                .reduce(
-                        "[",
-                        (acumulado, item) ->
-                                acumulado.equals("[")
-                                        ? acumulado + item
-                                        : acumulado + "," + item
-                )
-                + "]";
+        return PendienteJson.escribirLista(
+                listar()
+        );
     }
 
-    private String escaparJson(
-            String texto
+    public String obtenerComoJson(
+            int id
     ) {
-        return texto
-                .replace(
-                        "\\",
-                        "\\\\"
-                )
-                .replace(
-                        "\"",
-                        "\\\""
-                );
+        return PendienteJson.escribir(
+                obtener(id)
+        );
     }
 }

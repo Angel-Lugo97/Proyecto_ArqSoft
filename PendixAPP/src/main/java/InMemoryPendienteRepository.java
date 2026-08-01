@@ -91,4 +91,11 @@ public final class InMemoryPendienteRepository
                 pendientes.values()
         );
     }
+
+    @Override
+    public synchronized boolean eliminarPorId(
+            int id
+    ) {
+        return pendientes.remove(id) != null;
+    }
 }

@@ -9,4 +9,6 @@ public interface PendienteRepository {
     Pendiente actualizar(Pendiente pendiente);
 
     List<Pendiente> listar();
+
+    boolean eliminarPorId(int id);
 }

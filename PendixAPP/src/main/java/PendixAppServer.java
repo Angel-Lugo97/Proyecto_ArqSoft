@@ -260,14 +260,23 @@ public class PendixAppServer {
                 return;
             }
 
-            String path = exchange.getRequestURI().getPath();
+            String path =
+                    exchange.getRequestURI().getPath();
+
+            String requestBody = new String(
+                    exchange
+                            .getRequestBody()
+                            .readAllBytes(),
+                    StandardCharsets.UTF_8
+            );
 
             HttpResult result;
 
             try {
                 result = router.resolver(
                         exchange.getRequestMethod(),
-                        path
+                        path,
+                        requestBody
                 );
             } catch (PendienteRepositoryException e) {
                 System.err.println(
@@ -315,9 +324,25 @@ public class PendixAppServer {
             headers.set("Cache-Control", "no-store");
             aplicarHeaders(headers);
 
-            exchange.sendResponseHeaders(status, bytes.length);
+            if (status == 204) {
+                exchange.sendResponseHeaders(
+                        status,
+                        -1
+                );
 
-            try (OutputStream output = exchange.getResponseBody()) {
+                exchange.close();
+                return;
+            }
+
+            exchange.sendResponseHeaders(
+                    status,
+                    bytes.length
+            );
+
+            try (
+                    OutputStream output =
+                            exchange.getResponseBody()
+            ) {
                 output.write(bytes);
             }
         }

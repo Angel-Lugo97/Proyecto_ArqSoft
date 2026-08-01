@@ -48,6 +48,11 @@ public final class JdbcPendienteRepository
             ORDER BY id
             """;
 
+    private static final String SQL_ELIMINAR = """
+            DELETE FROM pendientes
+            WHERE id = ?
+            """;
+
     private final DatabaseConnectionFactory
             connectionFactory;
 
@@ -242,6 +247,33 @@ public final class JdbcPendienteRepository
         } catch (SQLException e) {
             throw error(
                     "listar",
+                    e
+            );
+        }
+    }
+
+    @Override
+    public boolean eliminarPorId(
+            int id
+    ) {
+        try (
+                Connection connection =
+                        connectionFactory.abrir();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                SQL_ELIMINAR
+                        )
+        ) {
+            statement.setInt(
+                    1,
+                    id
+            );
+
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw error(
+                    "eliminar",
                     e
             );
         }
