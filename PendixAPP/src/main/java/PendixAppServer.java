@@ -38,6 +38,9 @@ public class PendixAppServer {
         try {
             inicializarBaseDeDatosSiEstaHabilitada();
 
+            PendienteService pendienteService =
+                    crearPendienteService();
+
             HttpServer server = HttpServer.create(
                     new InetSocketAddress(host, port),
                     0
@@ -45,7 +48,10 @@ public class PendixAppServer {
 
             server.createContext(
                     "/",
-                    new PendixHandler(allowedOrigin)
+                    new PendixHandler(
+                            allowedOrigin,
+                            pendienteService
+                    )
             );
 
             server.setExecutor(null);
@@ -89,6 +95,39 @@ public class PendixAppServer {
             );
             System.out.println("Detalle: " + e.getMessage());
         }
+    }
+
+    private static PendienteService crearPendienteService() {
+        boolean databaseEnabled =
+                Boolean.parseBoolean(
+                        obtenerVariable(
+                                "DATABASE_ENABLED",
+                                "false"
+                        )
+                );
+
+        if (!databaseEnabled) {
+            System.out.println(
+                    "Repositorio activo: memoria local."
+            );
+
+            return new PendienteService();
+        }
+
+        DatabaseConfig config =
+                DatabaseConfig.desdeEntorno();
+
+        System.out.println(
+                "Repositorio activo: PostgreSQL."
+        );
+
+        return new PendienteService(
+                new JdbcPendienteRepository(
+                        new DatabaseConnectionFactory(
+                                config
+                        )
+                )
+        );
     }
 
     private static void inicializarBaseDeDatosSiEstaHabilitada()
@@ -201,11 +240,14 @@ public class PendixAppServer {
         private final PendixRouter router;
         private final String allowedOrigin;
 
-        private PendixHandler(String allowedOrigin) {
+        private PendixHandler(
+                String allowedOrigin,
+                PendienteService pendienteService
+        ) {
             this.allowedOrigin = allowedOrigin;
             this.router = new PendixRouter(
                     PendixAppServer::html,
-                    new PendienteService()
+                    pendienteService
             );
         }
 
@@ -220,10 +262,27 @@ public class PendixAppServer {
 
             String path = exchange.getRequestURI().getPath();
 
-            HttpResult result = router.resolver(
-                    exchange.getRequestMethod(),
-                    path
-            );
+            HttpResult result;
+
+            try {
+                result = router.resolver(
+                        exchange.getRequestMethod(),
+                        path
+                );
+            } catch (PendienteRepositoryException e) {
+                System.err.println(
+                        "Error de persistencia: "
+                                + e.getMessage()
+                );
+
+                result = new HttpResult(
+                        500,
+                        "application/json; charset=UTF-8",
+                        "{\"error\":"
+                                + "\"No se pudo acceder "
+                                + "a los pendientes\"}"
+                );
+            }
 
             enviar(
                     exchange,

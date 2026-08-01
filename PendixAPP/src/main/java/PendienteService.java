@@ -1,53 +1,98 @@
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class PendienteService {
-    private final Map<Integer, Pendiente> pendientes = new LinkedHashMap<>();
+    private final PendienteRepository repository;
 
     public PendienteService() {
-        agregar(new Pendiente(1, "Preparar presentación", "vencido"));
-        agregar(new Pendiente(2, "Comprar víveres", "activo"));
-        agregar(new Pendiente(3, "Enviar reporte semanal", "completado"));
+        this(
+                new InMemoryPendienteRepository()
+        );
     }
 
-    public Pendiente agregar(Pendiente pendiente) {
-        if (pendientes.containsKey(pendiente.id())) {
-            throw new IllegalArgumentException("Ya existe un pendiente con id " + pendiente.id());
-        }
-        pendientes.put(pendiente.id(), pendiente);
-        return pendiente;
+    public PendienteService(
+            PendienteRepository repository
+    ) {
+        this.repository =
+                Objects.requireNonNull(
+                        repository,
+                        "repository no puede ser null"
+                );
     }
 
-    public Optional<Pendiente> buscarPorId(int id) {
-        return Optional.ofNullable(pendientes.get(id));
+    public Pendiente agregar(
+            Pendiente pendiente
+    ) {
+        return repository.guardar(
+                pendiente
+        );
     }
 
-    public Pendiente completar(int id) {
+    public Optional<Pendiente> buscarPorId(
+            int id
+    ) {
+        return repository.buscarPorId(
+                id
+        );
+    }
+
+    public Pendiente completar(
+            int id
+    ) {
         Pendiente actual = buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Pendiente no encontrado: " + id));
-        Pendiente completado = actual.completar();
-        pendientes.put(id, completado);
-        return completado;
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "Pendiente no encontrado: "
+                                                + id
+                                )
+                );
+
+        return repository.actualizar(
+                actual.completar()
+        );
     }
 
     public List<Pendiente> listar() {
-        return new ArrayList<>(pendientes.values());
+        return repository.listar();
     }
 
     public String listarComoJson() {
         return listar().stream()
-                .map(p -> "{\"id\":" + p.id()
-                        + ",\"titulo\":\"" + escaparJson(p.titulo())
-                        + "\",\"estado\":\"" + p.estado() + "\"}")
-                .reduce("[", (acumulado, item) -> acumulado.equals("[")
-                        ? acumulado + item
-                        : acumulado + "," + item) + "]";
+                .map(
+                        pendiente ->
+                                "{\"id\":"
+                                        + pendiente.id()
+                                        + ",\"titulo\":\""
+                                        + escaparJson(
+                                                pendiente.titulo()
+                                        )
+                                        + "\",\"estado\":\""
+                                        + pendiente.estado()
+                                        + "\"}"
+                )
+                .reduce(
+                        "[",
+                        (acumulado, item) ->
+                                acumulado.equals("[")
+                                        ? acumulado + item
+                                        : acumulado + "," + item
+                )
+                + "]";
     }
 
-    private String escaparJson(String texto) {
-        return texto.replace("\\", "\\\\").replace("\"", "\\\"");
+    private String escaparJson(
+            String texto
+    ) {
+        return texto
+                .replace(
+                        "\\",
+                        "\\\\"
+                )
+                .replace(
+                        "\"",
+                        "\\\""
+                );
     }
 }
