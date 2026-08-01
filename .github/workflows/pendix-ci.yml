@@ -191,3 +191,141 @@ jobs:
             echo
             echo "Commit validado: $GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
+
+
+  build-pages:
+    name: 5. Preparar GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    needs:
+      - quality-gate
+
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/Entrega-Final'
+
+    permissions:
+      contents: read
+      pages: write
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Construir frontend estático
+        env:
+          PENDIX_API_URL: >-
+            ${{ vars.PENDIX_API_URL ||
+            'https://api-not-configured.invalid' }}
+        run: |
+          cd "$PROJECT_DIR"
+
+          python3 scripts/build_pages.py
+
+      - name: Validar frontend generado
+        run: |
+          cd "$PROJECT_DIR"
+
+          test -s build/pages/index.html
+          test -f build/pages/.nojekyll
+          test -s build/pages/deployment-info.json
+
+          if grep -R \
+            "__PENDIX_API_URL__" \
+            build/pages
+          then
+            echo "El placeholder no fue reemplazado."
+            exit 1
+          fi
+
+          python3 - <<'PYTHON'
+          from pathlib import Path
+
+          html = Path(
+              "build/pages/index.html"
+          ).read_text(
+              encoding="utf-8"
+          )
+
+          start = html.rfind("<script>")
+          end = html.find(
+              "</script>",
+              start
+          )
+
+          if start == -1 or end == -1:
+              raise SystemExit(
+                  "JavaScript no encontrado"
+              )
+
+          output = Path(
+              "build/pages-validation/app.js"
+          )
+
+          output.parent.mkdir(
+              parents=True,
+              exist_ok=True
+          )
+
+          output.write_text(
+              html[
+                  start + len("<script>"):end
+              ],
+              encoding="utf-8"
+          )
+          PYTHON
+
+          node --check \
+            build/pages-validation/app.js
+
+      - name: Subir artefacto de GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ env.PROJECT_DIR }}/build/pages
+          retention-days: 7
+
+  deploy-pages:
+    name: 6. Autorizar y publicar frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    needs:
+      - build-pages
+
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/Entrega-Final'
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Registrar URL publicada
+        run: |
+          {
+            echo "## Frontend publicado"
+            echo
+            echo "Sitio: ${{ steps.deployment.outputs.page_url }}"
+            echo
+            echo "Commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
