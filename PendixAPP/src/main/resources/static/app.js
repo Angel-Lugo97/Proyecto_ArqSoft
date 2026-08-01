@@ -1,3 +1,20 @@
+const parametrosUrl = new URLSearchParams(window.location.search);
+const backendDesdeUrl = parametrosUrl.get('api');
+
+if (backendDesdeUrl) {
+  localStorage.setItem(
+    'pendix_backend_url',
+    backendDesdeUrl.replace(/\/+$/, '')
+  );
+}
+
+const API_BASE_URL =
+  localStorage.getItem('pendix_backend_url') || '';
+
+function apiUrl(ruta) {
+  return `${API_BASE_URL}${ruta}`;
+}
+
 const tareasBase=[
  {id:1,t:'Preparar presentación',fecha:'Hoy, 2:00 PM',cat:'Trabajo',estado:'vencido'},
  {id:2,t:'Comprar víveres',fecha:'Mañana, 9:00 AM',cat:'Personal',estado:'activo'},
@@ -48,8 +65,9 @@ render();
 
 let serverVersion=null;
 async function watchServerVersion(){
+  if(!API_BASE_URL)return;
   try{
-    const response=await fetch('/version',{cache:'no-store'});
+    const response=await fetch(apiUrl('/version'),{cache:'no-store'});
     if(!response.ok)return;
     const data=await response.json();
     if(serverVersion===null){serverVersion=data.version;return;}
