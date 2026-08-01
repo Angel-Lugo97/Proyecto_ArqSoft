@@ -4,5 +4,4 @@ out/
 *.class
 *.log
 
-# Local database credentials
-.env
+.serve/

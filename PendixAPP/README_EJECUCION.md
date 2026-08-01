@@ -1,8 +1,8 @@
 # PendixAPP
 
-Aplicación PendixAPP ejecutable con Java en el puerto 5018.
+Aplicación web local construida con Java 21 y Gradle. Se ejecuta en el puerto `5018`, cuenta con diseño adaptable para computadora y teléfono, y puede publicarse temporalmente mediante Cloudflare Quick Tunnel.
 
-## Funcionalidades corregidas
+## Funcionalidades
 
 ```text
 - Agregar pendientes.
@@ -11,15 +11,17 @@ Aplicación PendixAPP ejecutable con Java en el puerto 5018.
 - Completar pendientes.
 - Deshacer pendientes completados.
 - Filtrar por Todos, Activos, Listos y Vencidos.
-- Al seleccionar un filtro, baja automáticamente a Mis pendientes.
 - Iniciar sesión y crear cuenta de forma simulada.
-- Sección Calendario funcional.
-- Sección Recordatorios funcional.
-- Sección Ajustes funcional.
+- Sección Calendario.
+- Sección Recordatorios.
+- Sección Ajustes.
 - Restaurar datos de ejemplo.
+- Vista adaptable para teléfonos reales.
+- Recarga automática después de cambios de código.
+- Publicación HTTPS temporal con Cloudflare Quick Tunnel.
 ```
 
-## Ejecutar rápido
+## Ejecutar solamente en local
 
 Linux / Arch Linux:
 
@@ -27,69 +29,84 @@ Linux / Arch Linux:
 bash iniciar_linux.sh
 ```
 
-Mac:
+También se puede ejecutar el JAR compilado:
 
 ```bash
-bash iniciar_mac.command
+./gradlew clean jar
+PENDIX_OPEN_BROWSER=false java -jar build/libs/PendixAPP-1.0.0.jar
 ```
 
-Windows:
-
-```bat
-INICIAR_WINDOWS.bat
-```
-
-También se puede ejecutar directamente:
-
-```bash
-java -jar PendixApp.jar
-```
-
-Después abre en cualquier navegador:
+Abrir:
 
 ```text
 http://localhost:5018
 ```
 
-## Código fuente
+## Publicar temporalmente en internet
 
-El código Java está en:
-
-```text
-src/PendixAppServer.java
-```
-
-## Compilar manualmente
+Instalar requisitos en Arch Linux:
 
 ```bash
-mkdir -p out
-javac --release 17 -encoding UTF-8 -d out src/PendixAppServer.java
-jar cfe PendixApp.jar PendixAppServer -C out .
-java -jar PendixApp.jar
+sudo pacman -S --needed jdk21-openjdk curl cloudflared
 ```
 
-## Detener servidor
+Ejecutar:
 
-En la terminal presiona:
+```bash
+chmod +x serve.sh
+./serve.sh
+```
+
+El script imprimirá una URL similar a:
 
 ```text
-CTRL + C
+https://nombre-aleatorio.trycloudflare.com
 ```
 
-## Pruebas automatizadas
+Mantener la terminal abierta. Para detener todo:
 
-PendixAPP utiliza JUnit 5 y Gradle para ejecutar una suite automatizada:
+```text
+Ctrl+C
+```
+
+La guía completa está en:
+
+```text
+docs/PUBLICACION_CLOUDFLARE.md
+```
+
+## Estructura principal
+
+```text
+src/main/java/PendixAppServer.java        Servidor HTTP y respuestas comprimidas
+src/main/java/PendixRouter.java           Enrutamiento web, API, health y version
+src/main/java/StaticResourceService.java  Carga HTML, CSS y JavaScript
+src/main/resources/static/index.html      Estructura de la interfaz
+src/main/resources/static/styles.css      Diseño y adaptación móvil
+src/main/resources/static/app.js          Interacciones y recarga automática
+serve.sh                                  Build, servidor, túnel y vigilancia
+```
+
+## Persistencia
+
+Los pendientes y la sesión simulada se guardan en `localStorage`. Cada navegador tiene sus propios datos; no existe una base de datos compartida en el servidor.
+
+## Pruebas automatizadas
 
 ```bash
 ./gradlew clean test
 ```
 
-El reporte HTML se genera en:
+Reporte HTML:
 
 ```text
 build/reports/tests/test/index.html
 ```
 
-## Integración Continua
+## Detener servidor local
 
-El workflow ubicado en `.github/workflows/java-ci.yml` compila el proyecto y ejecuta las pruebas en cada `push` y `pull_request`.
+En la terminal:
+
+```text
+Ctrl+C
+```

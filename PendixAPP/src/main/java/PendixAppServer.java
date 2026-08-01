@@ -10,200 +10,73 @@ import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
 
 public class PendixAppServer {
     private static final int DEFAULT_PORT = 5018;
-    private static final String DEFAULT_HOST = "0.0.0.0";
-    private static final String DEFAULT_ALLOWED_ORIGIN = "*";
+    private static final String DEFAULT_HOST = "127.0.0.1";
 
     public static void main(String[] args) {
+        String host = obtenerConfiguracion("pendix.host", "PENDIX_HOST", DEFAULT_HOST);
         int port = obtenerPuerto();
-        String host = obtenerVariable("HOST", DEFAULT_HOST);
-        String allowedOrigin = obtenerVariable(
-                "CORS_ALLOWED_ORIGIN",
-                DEFAULT_ALLOWED_ORIGIN
+        boolean openBrowser = Boolean.parseBoolean(
+                obtenerConfiguracion("pendix.openBrowser", "PENDIX_OPEN_BROWSER", "true")
         );
-
-        boolean autoOpenBrowser = Boolean.parseBoolean(
-                obtenerVariable("AUTO_OPEN_BROWSER", "true")
-        );
-
-        String browserHost = "0.0.0.0".equals(host)
-                ? "localhost"
-                : host;
-
+        String browserHost = "0.0.0.0".equals(host) ? "localhost" : host;
         String url = "http://" + browserHost + ":" + port;
 
         try {
-            inicializarBaseDeDatosSiEstaHabilitada();
-
-            PendienteService pendienteService =
-                    crearPendienteService();
-
-            HttpServer server = HttpServer.create(
-                    new InetSocketAddress(host, port),
-                    0
-            );
-
-            server.createContext(
-                    "/",
-                    new PendixHandler(
-                            allowedOrigin,
-                            pendienteService
-                    )
-            );
-
+            HttpServer server = HttpServer.create(new InetSocketAddress(host, port), 0);
+            server.createContext("/", new PendixHandler());
             server.setExecutor(null);
             server.start();
 
             System.out.println();
             System.out.println("============================================");
-            System.out.println(" PendixAPP ejecutándose correctamente");
-            System.out.println(" URL local: " + url);
-            System.out.println(" Host: " + host);
-            System.out.println(" Puerto: " + port);
-            System.out.println(" CORS permitido: " + allowedOrigin);
-            System.out.println(" Health check: " + url + "/api/health");
+            System.out.println(" PendixAPP ejecutandose correctamente");
+            System.out.println(" URL: " + url);
+            System.out.println(" Servidor Java en " + host + ":" + port);
             System.out.println(" Presiona CTRL + C para detenerlo");
             System.out.println("============================================");
             System.out.println();
 
-            if (autoOpenBrowser) {
+            if (openBrowser) {
                 abrirNavegador(url);
             }
         } catch (BindException e) {
             System.out.println();
-            System.out.println("El puerto " + port + " ya está ocupado.");
+            System.out.println("El puerto " + port + " ya esta ocupado.");
             System.out.println("Abre directamente: " + url);
-            System.out.println("O cierra el proceso que está usando ese puerto.");
+            System.out.println("O cierra el programa que esta usando ese puerto y vuelve a ejecutar.");
             System.out.println();
-        } catch (SQLException e) {
-            System.err.println();
-            System.err.println(
-                    "No se pudo inicializar PostgreSQL."
-            );
-            System.err.println(
-                    "Detalle: " + e.getMessage()
-            );
-            System.err.println();
-
-            System.exit(1);
         } catch (IOException e) {
-            System.out.println(
-                    "No se pudo iniciar PendixAPP en el puerto " + port + "."
-            );
+            System.out.println("No se pudo iniciar PendixAPP en el puerto " + port + ".");
             System.out.println("Detalle: " + e.getMessage());
         }
     }
 
-    private static PendienteService crearPendienteService() {
-        boolean databaseEnabled =
-                Boolean.parseBoolean(
-                        obtenerVariable(
-                                "DATABASE_ENABLED",
-                                "false"
-                        )
-                );
-
-        if (!databaseEnabled) {
-            System.out.println(
-                    "Repositorio activo: memoria local."
-            );
-
-            return new PendienteService();
-        }
-
-        DatabaseConfig config =
-                DatabaseConfig.desdeEntorno();
-
-        System.out.println(
-                "Repositorio activo: PostgreSQL."
-        );
-
-        return new PendienteService(
-                new JdbcPendienteRepository(
-                        new DatabaseConnectionFactory(
-                                config
-                        )
-                )
-        );
-    }
-
-    private static void inicializarBaseDeDatosSiEstaHabilitada()
-            throws SQLException {
-        boolean enabled = Boolean.parseBoolean(
-                obtenerVariable(
-                        "DATABASE_INIT_ENABLED",
-                        "false"
-                )
-        );
-
-        if (!enabled) {
-            System.out.println(
-                    "Inicialización de PostgreSQL deshabilitada."
-            );
-            return;
-        }
-
-        DatabaseConfig config =
-                DatabaseConfig.desdeEntorno();
-
-        System.out.println(
-                "Inicializando PostgreSQL en: "
-                        + config.url()
-        );
-
-        DatabaseInitializer initializer =
-                new DatabaseInitializer(
-                        new DatabaseConnectionFactory(
-                                config
-                        )
-                );
-
-        initializer.inicializar();
-
-        System.out.println(
-                "Esquema y datos iniciales verificados."
-        );
-    }
-
     private static int obtenerPuerto() {
-        String portValue = System.getenv("PORT");
-
-        if (portValue == null || portValue.isBlank()) {
-            return DEFAULT_PORT;
-        }
-
+        String value = obtenerConfiguracion("pendix.port", "PENDIX_PORT", String.valueOf(DEFAULT_PORT));
         try {
-            int port = Integer.parseInt(portValue);
-
+            int port = Integer.parseInt(value);
             if (port < 1 || port > 65535) {
-                throw new IllegalArgumentException(
-                        "PORT debe estar entre 1 y 65535."
-                );
+                throw new IllegalArgumentException("El puerto debe estar entre 1 y 65535");
             }
-
             return port;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(
-                    "La variable PORT debe contener un número válido.",
-                    e
-            );
+            throw new IllegalArgumentException("Puerto no valido: " + value, e);
         }
     }
 
-    private static String obtenerVariable(
-            String nombre,
-            String valorPredeterminado
-    ) {
-        String valor = System.getenv(nombre);
-
-        if (valor == null || valor.isBlank()) {
-            return valorPredeterminado;
+    private static String obtenerConfiguracion(String property, String environment, String defaultValue) {
+        String systemValue = System.getProperty(property);
+        if (systemValue != null && !systemValue.isBlank()) {
+            return systemValue.trim();
         }
-
-        return valor.trim();
+        String environmentValue = System.getenv(environment);
+        if (environmentValue != null && !environmentValue.isBlank()) {
+            return environmentValue.trim();
+        }
+        return defaultValue;
     }
 
     private static void abrirNavegador(String url) {
@@ -213,7 +86,7 @@ public class PendixAppServer {
                 return;
             }
         } catch (Throwable ignored) {
-            // El servidor continúa aunque no pueda abrir el navegador.
+            // Si el sistema no permite abrir navegador automaticamente, el servidor sigue activo.
         }
 
         String os = System.getProperty("os.name").toLowerCase();
@@ -230,167 +103,46 @@ public class PendixAppServer {
         try {
             Runtime.getRuntime().exec(comando);
         } catch (IOException ignored) {
-            System.out.println(
-                    "Abre manualmente en el navegador: " + url
-            );
+            System.out.println("Abre manualmente en el navegador: " + url);
         }
     }
 
     private static class PendixHandler implements HttpHandler {
-        private final PendixRouter router;
-        private final String allowedOrigin;
-
-        private PendixHandler(
-                String allowedOrigin,
-                PendienteService pendienteService
-        ) {
-            this.allowedOrigin = allowedOrigin;
-            this.router = new PendixRouter(
-                    PendixAppServer::html,
-                    pendienteService
-            );
-        }
+        private final PendixRouter router =
+                new PendixRouter(new StaticResourceService(), new PendienteService());
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            if ("OPTIONS".equalsIgnoreCase(
-                    exchange.getRequestMethod()
-            )) {
-                enviarPreflight(exchange);
-                return;
-            }
-
-            String path =
-                    exchange.getRequestURI().getPath();
-
-            String requestBody = new String(
-                    exchange
-                            .getRequestBody()
-                            .readAllBytes(),
-                    StandardCharsets.UTF_8
-            );
-
-            HttpResult result;
-
-            try {
-                result = router.resolver(
-                        exchange.getRequestMethod(),
-                        path,
-                        requestBody
-                );
-            } catch (PendienteRepositoryException e) {
-                System.err.println(
-                        "Error de persistencia: "
-                                + e.getMessage()
-                );
-
-                result = new HttpResult(
-                        500,
-                        "application/json; charset=UTF-8",
-                        "{\"error\":"
-                                + "\"No se pudo acceder "
-                                + "a los pendientes\"}"
-                );
-            }
-
-            enviar(
-                    exchange,
-                    result.status(),
-                    result.contentType(),
-                    result.body()
-            );
+            String path = exchange.getRequestURI().getPath();
+            HttpResult result = router.resolver(exchange.getRequestMethod(), path);
+            enviar(exchange, result);
         }
 
-        private void enviarPreflight(
-                HttpExchange exchange
-        ) throws IOException {
+        private void enviar(HttpExchange exchange, HttpResult result) throws IOException {
+            byte[] bytes = result.body().getBytes(StandardCharsets.UTF_8);
             Headers headers = exchange.getResponseHeaders();
-            aplicarHeaders(headers);
-
-            exchange.sendResponseHeaders(204, -1);
-            exchange.close();
-        }
-
-        private void enviar(
-                HttpExchange exchange,
-                int status,
-                String contentType,
-                String body
-        ) throws IOException {
-            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-            Headers headers = exchange.getResponseHeaders();
-
-            headers.set("Content-Type", contentType);
+            headers.set("Content-Type", result.contentType());
             headers.set("Cache-Control", "no-store");
-            aplicarHeaders(headers);
+            headers.set("X-Content-Type-Options", "nosniff");
+            headers.set("Referrer-Policy", "no-referrer");
+            headers.set("Vary", "Accept-Encoding");
 
-            if (status == 204) {
-                exchange.sendResponseHeaders(
-                        status,
-                        -1
-                );
-
-                exchange.close();
-                return;
+            String acceptEncoding = exchange.getRequestHeaders().getFirst("Accept-Encoding");
+            if (esTexto(result.contentType()) && bytes.length > 256 && GzipSupport.aceptaGzip(acceptEncoding)) {
+                bytes = GzipSupport.comprimir(bytes);
+                headers.set("Content-Encoding", "gzip");
             }
 
-            exchange.sendResponseHeaders(
-                    status,
-                    bytes.length
-            );
-
-            try (
-                    OutputStream output =
-                            exchange.getResponseBody()
-            ) {
-                output.write(bytes);
+            exchange.sendResponseHeaders(result.status(), bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
             }
         }
 
-        private void aplicarHeaders(Headers headers) {
-            headers.set(
-                    "Access-Control-Allow-Origin",
-                    allowedOrigin
-            );
-
-            headers.set(
-                    "Access-Control-Allow-Methods",
-                    "GET, POST, PUT, DELETE, OPTIONS"
-            );
-
-            headers.set(
-                    "Access-Control-Allow-Headers",
-                    "Content-Type, Authorization"
-            );
-
-            headers.set(
-                    "Access-Control-Max-Age",
-                    "3600"
-            );
-        }
-    }
-
-    private static String html() {
-        try (var stream =
-                     PendixAppServer.class.getResourceAsStream(
-                             "/public/index.html"
-                     )) {
-
-            if (stream == null) {
-                throw new IllegalStateException(
-                        "No se encontró el frontend en /public/index.html"
-                );
-            }
-
-            return new String(
-                    stream.readAllBytes(),
-                    StandardCharsets.UTF_8
-            );
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "No se pudo cargar el frontend",
-                    e
-            );
+        private boolean esTexto(String contentType) {
+            return contentType.startsWith("text/")
+                    || contentType.startsWith("application/javascript")
+                    || contentType.startsWith("application/json");
         }
     }
 }

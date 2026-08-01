@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PendixAPP</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="stage">
+  <section class="info">
+    <div class="eyebrow">Servidor Java</div>
+    <h1>PendixAPP</h1>
+    <p>Prototipo web con apariencia de celular</p>
+  </section>
+
+  <main class="browser">
+    <div class="browserbar"><span>AA</span><span>localhost:5018</span><span>↻</span></div>
+    <section class="phone" aria-label="PendixAPP en vista celular">
+      <div class="screen">
+        <div class="content" id="content">
+          <div class="status"><span>9:41</span><span class="icons">🔋</span></div>
+          <header class="top">
+            <div class="logo">☑</div>
+            <div class="title"><h2>PendixAPP</h2><p id="sessionText">Tus pendientes, bajo control</p></div>
+            <div class="header-actions"><button class="iconbtn" onclick="showView('recordatorios')">🔔<span class="badge" id="notifBadge">0</span></button><button class="iconbtn" onclick="openLogin()">👤</button></div>
+          </header>
+
+          <section id="viewPendientes" class="view active-view">
+            <nav class="filters" id="filters"></nav>
+            <section class="card" id="notificacionesCard">
+              <div class="section-title"><span>🔔</span><strong>Notificaciones</strong><span class="link" onclick="showView('recordatorios')">Ver todas ›</span></div>
+              <div id="notificacionesHome"></div>
+            </section>
+            <section class="card">
+              <div class="section-title"><span>⭐</span><strong>Planes / Iniciar sesión</strong></div>
+              <p class="muted" style="margin-top:-6px">Elige el plan ideal para ti</p>
+              <div class="plans">
+                <article class="plan"><h3>Gratis</h3><div class="price">$0</div><ul><li>Pendientes ilimitados</li><li>Recordatorios básicos</li><li>Notificaciones locales</li></ul><button class="btn" onclick="selectPlan('Gratis')">Comenzar</button></article>
+                <article class="plan pro"><h3>Pro</h3><div class="price">$4.99</div><ul><li>Todo lo de Gratis</li><li>Recordatorios avanzados</li><li>Exportación</li></ul><button class="btn fill" onclick="selectPlan('Pro')">Probar Pro</button></article>
+                <article class="plan"><h3>Premium</h3><div class="price">$9.99</div><ul><li>Todo lo de Pro</li><li>Backups</li><li>Etiquetas</li></ul><button class="btn" onclick="selectPlan('Premium')">Premium</button></article>
+              </div>
+              <div class="login-row"><button class="btn" onclick="openLogin()">↪ Iniciar sesión</button><button class="btn fill" onclick="openLogin(true)">👤 Crear cuenta</button></div>
+            </section>
+            <section class="card" id="tasksSection">
+              <div class="section-title"><span>📋</span><strong>Mis pendientes</strong><span class="add" onclick="openTaskForm()">+ Nuevo pendiente</span></div>
+              <div id="tasks"></div>
+            </section>
+          </section>
+
+          <section id="viewCalendario" class="view">
+            <section class="card">
+              <div class="section-title"><span>📅</span><strong>Calendario</strong><span class="link" onclick="showView('pendientes')">Volver</span></div>
+              <p class="muted">Vista rápida de pendientes organizados por fecha.</p>
+              <div id="calendarList"></div>
+            </section>
+          </section>
+
+          <section id="viewRecordatorios" class="view">
+            <section class="card">
+              <div class="section-title"><span>🔔</span><strong>Recordatorios</strong><span class="link" onclick="showView('pendientes')">Volver</span></div>
+              <p class="muted">Recordatorios vencidos y activos generados desde tus pendientes.</p>
+              <div id="reminderList"></div>
+            </section>
+          </section>
+
+          <section id="viewAjustes" class="view">
+            <section class="card">
+              <div class="section-title"><span>⚙</span><strong>Ajustes</strong><span class="link" onclick="showView('pendientes')">Volver</span></div>
+              <div class="setting-row"><div><strong>Tema oscuro</strong><p class="muted">Activo para reducir fatiga visual.</p></div><button class="toggle" onclick="toast('El tema oscuro ya está activo')"></button></div>
+              <div class="setting-row"><div><strong>Notificaciones locales</strong><p class="muted">Recordatorios simulados en la maqueta.</p></div><button class="toggle" onclick="toast('Notificaciones locales activas')"></button></div>
+              <button class="btn" onclick="exportData()">Exportar pendientes</button><br><br>
+              <button class="btn danger" onclick="resetData()">Restaurar datos de ejemplo</button><br><br>
+              <button class="btn" onclick="logout()">Cerrar sesión</button>
+            </section>
+          </section>
+        </div>
+
+        <footer class="bottom">
+          <button class="nav active" data-nav="pendientes" onclick="showView('pendientes')"><b>▣</b>Pendientes</button>
+          <button class="nav" data-nav="calendario" onclick="showView('calendario')"><b>▤</b>Calendario</button>
+          <button class="nav" data-nav="recordatorios" onclick="showView('recordatorios')"><b>♢</b>Recordatorios</button>
+          <button class="nav" data-nav="ajustes" onclick="showView('ajustes')"><b>⚙</b>Ajustes</button>
+        </footer>
+
+        <div class="modal" id="taskModal">
+          <div class="modal-box">
+            <div class="modal-head"><h3 id="taskModalTitle">Nuevo pendiente</h3><button class="close" onclick="closeTaskForm()">×</button></div>
+            <input type="hidden" id="taskId">
+            <input class="field" id="taskTitle" placeholder="Título del pendiente">
+            <div class="form-grid">
+              <input class="field" id="taskDate" type="date">
+              <input class="field" id="taskTime" type="time">
+              <input class="field" id="taskCategory" placeholder="Categoría">
+              <select class="field" id="taskState"><option value="activo">Activo</option><option value="vencido">Vencido</option><option value="completado">Completado</option></select>
+            </div>
+            <button class="btn fill" onclick="saveTask()">Guardar pendiente</button>
+          </div>
+        </div>
+
+        <div class="modal" id="loginModal">
+          <div class="modal-box">
+            <div class="modal-head"><h3 id="loginTitle">Iniciar sesión</h3><button class="close" onclick="closeLogin()">×</button></div>
+            <input class="field" id="loginName" placeholder="Nombre de usuario">
+            <input class="field" id="loginEmail" type="email" placeholder="Correo electrónico">
+            <input class="field" id="loginPass" type="password" placeholder="Contraseña">
+            <button class="btn fill" onclick="login()">Continuar</button>
+          </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
