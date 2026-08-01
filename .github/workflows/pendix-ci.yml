@@ -1,0 +1,193 @@
+name: PendixAPP CI
+
+on:
+  push:
+    branches:
+      - Entrega-Final
+      - master
+
+  pull_request:
+    branches:
+      - Entrega-Final
+      - master
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pendix-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_DIR: "PendixAPP"
+  JAVA_VERSION: "21"
+  NODE_VERSION: "22"
+
+jobs:
+  validate-frontend:
+    name: 1. Validar frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Validar estructura del frontend
+        run: |
+          cd "$PROJECT_DIR"
+          python3 scripts/validate_frontend.py
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          cd "$PROJECT_DIR"
+          node --check build/frontend-validation/app.js
+
+  test-backend:
+    name: 2. Probar backend y PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pendix
+          POSTGRES_USER: pendix_user
+          POSTGRES_PASSWORD: PendixCi123
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U pendix_user -d pendix"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: jdbc:postgresql://127.0.0.1:5432/pendix
+      DATABASE_USER: pendix_user
+      DATABASE_PASSWORD: PendixCi123
+      DATABASE_ENABLED: "true"
+      DATABASE_INIT_ENABLED: "true"
+      RUN_DATABASE_TESTS: "true"
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Preparar Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3 # v4.4.2
+
+      - name: Ejecutar pruebas unitarias y de integración
+        run: |
+          chmod +x "$PROJECT_DIR/gradlew"
+          cd "$PROJECT_DIR"
+
+          ./gradlew             clean             test             --no-daemon             --stacktrace
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pendix-test-report-${{ github.run_number }}
+          path: ${{ env.PROJECT_DIR }}/build/reports/tests/test
+          if-no-files-found: warn
+          retention-days: 14
+
+  package-backend:
+    name: 3. Empaquetar backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    needs:
+      - validate-frontend
+      - test-backend
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Preparar Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3 # v4.4.2
+
+      - name: Generar JAR y paquete AWS
+        run: |
+          chmod +x "$PROJECT_DIR/gradlew"
+          cd "$PROJECT_DIR"
+
+          ./gradlew             clean             jar             awsBundle             --no-daemon             -x test
+
+      - name: Validar artefactos
+        run: |
+          cd "$PROJECT_DIR"
+
+          test -s build/libs/PendixAPP.jar
+          test -s build/distributions/PendixAPP-aws.zip
+
+          jar tf build/libs/PendixAPP.jar             | grep -Fx "PendixAppServer.class"
+
+          jar tf build/libs/PendixAPP.jar             | grep -Fx "public/index.html"
+
+          unzip -Z1             build/distributions/PendixAPP-aws.zip             | grep -Fx "PendixAPP.jar"
+
+          unzip -Z1             build/distributions/PendixAPP-aws.zip             | grep -Fx "Procfile"
+
+          unzip -Z1             build/distributions/PendixAPP-aws.zip             | grep -Fx ".ebextensions/01-runtime.config"
+
+      - name: Publicar artefactos del backend
+        uses: actions/upload-artifact@v4
+        with:
+          name: pendix-backend-${{ github.run_number }}
+          path: |
+            ${{ env.PROJECT_DIR }}/build/libs/PendixAPP.jar
+            ${{ env.PROJECT_DIR }}/build/distributions/PendixAPP-aws.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  quality-gate:
+    name: 4. CI aprobado
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    needs:
+      - validate-frontend
+      - test-backend
+      - package-backend
+
+    steps:
+      - name: Registrar aprobación automática
+        run: |
+          {
+            echo "## PendixAPP CI aprobado"
+            echo
+            echo "- Frontend validado"
+            echo "- JavaScript validado"
+            echo "- Pruebas unitarias aprobadas"
+            echo "- Pruebas PostgreSQL aprobadas"
+            echo "- JAR ejecutable generado"
+            echo "- Paquete AWS generado"
+            echo
+            echo "Commit validado: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
