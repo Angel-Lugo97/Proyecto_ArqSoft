@@ -45,4 +45,28 @@ class PendixRouterTest {
         // Assert
         assertEquals(404, result.status());
     }
+
+    @Test
+    void debeInformarQueLaApiEstaDisponible() {
+        // Arrange
+        PendixRouter router = new PendixRouter(
+                () -> "<html></html>",
+                new PendienteService()
+        );
+
+        // Act
+        HttpResult result = router.resolver(
+                "GET",
+                "/api/health"
+        );
+
+        // Assert
+        assertEquals(200, result.status());
+        assertEquals(
+                "application/json; charset=UTF-8",
+                result.contentType()
+        );
+        assertTrue(result.body().contains("\"status\":\"UP\""));
+        assertTrue(result.body().contains("PendixAPP"));
+    }
 }

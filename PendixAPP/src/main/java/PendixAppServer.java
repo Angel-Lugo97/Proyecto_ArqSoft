@@ -12,38 +12,107 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 public class PendixAppServer {
-    private static final int PORT = 5018;
-    private static final String HOST = "127.0.0.1";
+    private static final int DEFAULT_PORT = 5018;
+    private static final String DEFAULT_HOST = "0.0.0.0";
+    private static final String DEFAULT_ALLOWED_ORIGIN = "*";
 
     public static void main(String[] args) {
-        String url = "http://localhost:" + PORT;
+        int port = obtenerPuerto();
+        String host = obtenerVariable("HOST", DEFAULT_HOST);
+        String allowedOrigin = obtenerVariable(
+                "CORS_ALLOWED_ORIGIN",
+                DEFAULT_ALLOWED_ORIGIN
+        );
+
+        boolean autoOpenBrowser = Boolean.parseBoolean(
+                obtenerVariable("AUTO_OPEN_BROWSER", "true")
+        );
+
+        String browserHost = "0.0.0.0".equals(host)
+                ? "localhost"
+                : host;
+
+        String url = "http://" + browserHost + ":" + port;
 
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(HOST, PORT), 0);
-            server.createContext("/", new PendixHandler());
+            HttpServer server = HttpServer.create(
+                    new InetSocketAddress(host, port),
+                    0
+            );
+
+            server.createContext(
+                    "/",
+                    new PendixHandler(allowedOrigin)
+            );
+
             server.setExecutor(null);
             server.start();
 
             System.out.println();
             System.out.println("============================================");
-            System.out.println(" PendixAPP ejecutandose correctamente");
-            System.out.println(" URL: " + url);
-            System.out.println(" Servidor Java en puerto " + PORT);
+            System.out.println(" PendixAPP ejecutándose correctamente");
+            System.out.println(" URL local: " + url);
+            System.out.println(" Host: " + host);
+            System.out.println(" Puerto: " + port);
+            System.out.println(" CORS permitido: " + allowedOrigin);
+            System.out.println(" Health check: " + url + "/api/health");
             System.out.println(" Presiona CTRL + C para detenerlo");
             System.out.println("============================================");
             System.out.println();
 
-            abrirNavegador(url);
+            if (autoOpenBrowser) {
+                abrirNavegador(url);
+            }
         } catch (BindException e) {
             System.out.println();
-            System.out.println("El puerto " + PORT + " ya esta ocupado.");
+            System.out.println("El puerto " + port + " ya está ocupado.");
             System.out.println("Abre directamente: " + url);
-            System.out.println("O cierra el programa que esta usando ese puerto y vuelve a ejecutar.");
+            System.out.println("O cierra el proceso que está usando ese puerto.");
             System.out.println();
         } catch (IOException e) {
-            System.out.println("No se pudo iniciar PendixAPP en el puerto " + PORT + ".");
+            System.out.println(
+                    "No se pudo iniciar PendixAPP en el puerto " + port + "."
+            );
             System.out.println("Detalle: " + e.getMessage());
         }
+    }
+
+    private static int obtenerPuerto() {
+        String portValue = System.getenv("PORT");
+
+        if (portValue == null || portValue.isBlank()) {
+            return DEFAULT_PORT;
+        }
+
+        try {
+            int port = Integer.parseInt(portValue);
+
+            if (port < 1 || port > 65535) {
+                throw new IllegalArgumentException(
+                        "PORT debe estar entre 1 y 65535."
+                );
+            }
+
+            return port;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "La variable PORT debe contener un número válido.",
+                    e
+            );
+        }
+    }
+
+    private static String obtenerVariable(
+            String nombre,
+            String valorPredeterminado
+    ) {
+        String valor = System.getenv(nombre);
+
+        if (valor == null || valor.isBlank()) {
+            return valorPredeterminado;
+        }
+
+        return valor.trim();
     }
 
     private static void abrirNavegador(String url) {
@@ -53,7 +122,7 @@ public class PendixAppServer {
                 return;
             }
         } catch (Throwable ignored) {
-            // Si el sistema no permite abrir navegador automaticamente, el servidor sigue activo.
+            // El servidor continúa aunque no pueda abrir el navegador.
         }
 
         String os = System.getProperty("os.name").toLowerCase();
@@ -70,37 +139,106 @@ public class PendixAppServer {
         try {
             Runtime.getRuntime().exec(comando);
         } catch (IOException ignored) {
-            System.out.println("Abre manualmente en el navegador: " + url);
+            System.out.println(
+                    "Abre manualmente en el navegador: " + url
+            );
         }
     }
 
     private static class PendixHandler implements HttpHandler {
-        private final PendixRouter router =
-                new PendixRouter(PendixAppServer::html, new PendienteService());
+        private final PendixRouter router;
+        private final String allowedOrigin;
+
+        private PendixHandler(String allowedOrigin) {
+            this.allowedOrigin = allowedOrigin;
+            this.router = new PendixRouter(
+                    PendixAppServer::html,
+                    new PendienteService()
+            );
+        }
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(
+                    exchange.getRequestMethod()
+            )) {
+                enviarPreflight(exchange);
+                return;
+            }
+
             String path = exchange.getRequestURI().getPath();
-            HttpResult result = router.resolver(exchange.getRequestMethod(), path);
-            enviar(exchange, result.status(), result.contentType(), result.body());
+
+            HttpResult result = router.resolver(
+                    exchange.getRequestMethod(),
+                    path
+            );
+
+            enviar(
+                    exchange,
+                    result.status(),
+                    result.contentType(),
+                    result.body()
+            );
         }
 
-        private void enviar(HttpExchange exchange, int status, String contentType, String body) throws IOException {
+        private void enviarPreflight(
+                HttpExchange exchange
+        ) throws IOException {
+            Headers headers = exchange.getResponseHeaders();
+            aplicarHeaders(headers);
+
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+        }
+
+        private void enviar(
+                HttpExchange exchange,
+                int status,
+                String contentType,
+                String body
+        ) throws IOException {
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             Headers headers = exchange.getResponseHeaders();
+
             headers.set("Content-Type", contentType);
             headers.set("Cache-Control", "no-store");
+            aplicarHeaders(headers);
+
             exchange.sendResponseHeaders(status, bytes.length);
 
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(bytes);
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(bytes);
             }
+        }
+
+        private void aplicarHeaders(Headers headers) {
+            headers.set(
+                    "Access-Control-Allow-Origin",
+                    allowedOrigin
+            );
+
+            headers.set(
+                    "Access-Control-Allow-Methods",
+                    "GET, POST, PUT, DELETE, OPTIONS"
+            );
+
+            headers.set(
+                    "Access-Control-Allow-Headers",
+                    "Content-Type, Authorization"
+            );
+
+            headers.set(
+                    "Access-Control-Max-Age",
+                    "3600"
+            );
         }
     }
 
     private static String html() {
         try (var stream =
-                     PendixAppServer.class.getResourceAsStream("/public/index.html")) {
+                     PendixAppServer.class.getResourceAsStream(
+                             "/public/index.html"
+                     )) {
 
             if (stream == null) {
                 throw new IllegalStateException(
